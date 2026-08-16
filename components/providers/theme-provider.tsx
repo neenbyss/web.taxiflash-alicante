@@ -47,7 +47,9 @@ function ThemeHotkey() {
         return
       }
 
-      if (event.key.toLowerCase() !== "d") {
+      // event.key puede venir undefined (autocompletado, eventos sintéticos
+      // de algunos navegadores/extensiones): sin este guard, crashea.
+      if (typeof event.key !== "string" || event.key.toLowerCase() !== "d") {
         return
       }
 

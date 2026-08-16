@@ -1,6 +1,15 @@
 packages: []
 
+# Una sola copia de zod: sin esto, el CLI de shadcn arrastra zod v3 y los
+# tipos de @hookform/resolvers se resuelven contra la copia equivocada.
+overrides:
+  zod: ^4.4.3
+
 allowBuilds:
   sharp: true
   unrs-resolver: true
   msw: false
+  prisma: true
+  '@prisma/engines': true
+  '@prisma/client': true
+  esbuild: true

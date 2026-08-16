@@ -1,0 +1,78 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-taxiflash}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taxiflash_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-taxiflash}
+    ports:
+      - "5433:5432"
+    volumes:
+      - taxiflash_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taxiflash} -d ${POSTGRES_DB:-taxiflash}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Servidor SMTP de desarrollo con UI web (http://localhost:8025).
+  # En producción, sustituir por un proveedor SMTP real via variables SMTP_*.
+  mailpit:
+    image: axllent/mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  # Aplica migraciones y datos semilla; corre una vez antes de levantar la app.
+  migrate:
+    build:
+      context: .
+      target: builder
+    command: sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-taxiflash}:${POSTGRES_PASSWORD:-taxiflash_dev_password}@db:5432/${POSTGRES_DB:-taxiflash}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@taxiflash.local}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin123!}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?define BETTER_AUTH_SECRET en .env}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3500}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-taxiflash}:${POSTGRES_PASSWORD:-taxiflash_dev_password}@db:5432/${POSTGRES_DB:-taxiflash}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?define BETTER_AUTH_SECRET en .env}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3500}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3500}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Por defecto los correos van a Mailpit (solo visible en http://localhost:8025,
+      # no sale nada a internet). Para deshabilitar el email por completo,
+      # define SMTP_HOST_DOCKER="" en el .env (sintaxis `-`: respeta el vacío).
+      SMTP_HOST: ${SMTP_HOST_DOCKER-mailpit}
+      SMTP_PORT: ${SMTP_PORT_DOCKER:-1025}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      EMAIL_FROM: ${EMAIL_FROM:-TaxiFlash <no-reply@taxiflash.local>}
+      TARIFA_BASE: ${TARIFA_BASE:-2.50}
+      TARIFA_POR_KM: ${TARIFA_POR_KM:-1.20}
+      TARIFA_MINIMA: ${TARIFA_MINIMA:-4.00}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_started
+
+volumes:
+  taxiflash_pgdata:

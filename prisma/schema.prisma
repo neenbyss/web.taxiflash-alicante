@@ -1,0 +1,375 @@
+// TaxiFlash — esquema de datos
+// Reservas de taxi por formulario con aceptación manual (sin matching en tiempo real).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum Role {
+  CLIENTE
+  CHOFER
+  ADMIN
+}
+
+enum ReservaEstado {
+  PENDIENTE
+  ACEPTADA
+  EN_CURSO
+  FINALIZADA
+  CANCELADA
+  RECHAZADA
+}
+
+enum ReservaTipo {
+  INMEDIATA
+  PROGRAMADA
+}
+
+enum AlquilerEstado {
+  A_CONFIRMAR
+  CONFIRMADO
+  RECHAZADO
+  CANCELADO
+  FINALIZADO
+}
+
+enum NotificacionCanal {
+  IN_APP
+  EMAIL
+}
+
+enum ReporteEstado {
+  ABIERTO
+  EN_REVISION
+  RESUELTO
+}
+
+// ============================================================
+// Auth (better-auth) + Usuarios
+// ============================================================
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Campos de dominio
+  role     Role    @default(CLIENTE)
+  telefono String?
+  activo   Boolean @default(true)
+
+  // Preferencias del cliente (customización de reserva)
+  direccionFrecuente String?
+  vehiculoPreferido  String?
+  notasPreferencias  String?
+
+  sessions           Session[]
+  accounts           Account[]
+  reservasComoCliente Reserva[]  @relation("ReservasCliente")
+  reservasComoChofer  Reserva[]  @relation("ReservasChofer")
+  alquileresComoCliente AlquilerEntreCiudades[] @relation("AlquileresCliente")
+  alquileresComoChofer  AlquilerEntreCiudades[] @relation("AlquileresChofer")
+  notificaciones     Notificacion[]
+  mensajes           Mensaje[]
+  resenas            Resena[]   @relation("ResenasCliente")
+  resenasRecibidas   Resena[]   @relation("ResenasChofer")
+  permisos           UserPermiso[]
+  reportes           Reporte[]  @relation("ReportesAutor")
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// Registro de altas por IP para limitar creación masiva de cuentas (anti-bot).
+model RegistroCuenta {
+  id        String   @id @default(cuid())
+  ip        String
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
+  @@map("registro_cuenta")
+}
+
+// ============================================================
+// Permisos y roles
+// ============================================================
+
+// Catálogo de permisos (ej. "gestionar_usuarios", "asignar_reservas").
+model Permiso {
+  id          String        @id @default(cuid())
+  codigo      String        @unique
+  nombre      String
+  descripcion String?
+  rolPermisos RolPermiso[]
+  userPermisos UserPermiso[]
+
+  @@map("permiso")
+}
+
+// Permisos por defecto de cada rol; editable por el admin.
+model RolPermiso {
+  id        String  @id @default(cuid())
+  role      Role
+  permisoId String
+  permiso   Permiso @relation(fields: [permisoId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permisoId])
+  @@map("rol_permiso")
+}
+
+// Override por usuario: concedido=true otorga un permiso extra al usuario,
+// concedido=false le revoca un permiso que su rol tendría por defecto.
+model UserPermiso {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permisoId String
+  permiso   Permiso @relation(fields: [permisoId], references: [id], onDelete: Cascade)
+  concedido Boolean
+
+  @@unique([userId, permisoId])
+  @@map("user_permiso")
+}
+
+// ============================================================
+// Reservas
+// ============================================================
+
+model Reserva {
+  id     String        @id @default(cuid())
+  // Código público corto para que un invitado (sin cuenta) consulte su reserva.
+  codigo String        @unique
+  estado ReservaEstado @default(PENDIENTE)
+  tipo   ReservaTipo   @default(INMEDIATA)
+
+  // Cliente registrado (nullable: reservas de invitados) o datos de contacto sueltos.
+  clienteId       String?
+  cliente         User?   @relation("ReservasCliente", fields: [clienteId], references: [id], onDelete: SetNull)
+  nombreContacto  String
+  telefonoContacto String?
+  emailContacto   String?
+
+  choferId String?
+  chofer   User?   @relation("ReservasChofer", fields: [choferId], references: [id], onDelete: SetNull)
+
+  fechaProgramada DateTime?
+
+  origenDireccion  String
+  origenLat        Float
+  origenLng        Float
+  destinoDireccion String
+  destinoLat       Float
+  destinoLng       Float
+  // Paradas intermedias: [{ direccion, lat, lng }]
+  paradas          Json   @default("[]")
+
+  distanciaKm Float?
+  // Estimación informativa; el cobro real es por taxímetro.
+  tarifaEstimada Float?
+
+  notas         String?
+  motivoEstado  String? // motivo de rechazo/cancelación
+
+  // Fase de recogida (entre ACEPTADA y EN_CURSO). Se derivan del set de
+  // timestamps: en camino → llegó → cliente confirma salida.
+  aceptadaEn       DateTime?
+  choferEnCaminoEn DateTime?
+  choferLlegoEn    DateTime?
+  clienteSaleEn    DateTime?
+  // Fecha límite de espera tras la llegada del chofer; si el cliente no
+  // confirma su salida antes, la reserva se cancela automáticamente.
+  esperaHasta      DateTime?
+  iniciadaEn       DateTime?
+  finalizadaEn     DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  mensajes Mensaje[]
+  reportes Reporte[]
+  resena   Resena?
+
+  @@index([estado, createdAt])
+  @@index([clienteId])
+  @@index([choferId])
+  @@map("reserva")
+}
+
+// ============================================================
+// Alquiler entre ciudades (precio a confirmar manualmente)
+// ============================================================
+
+model AlquilerEntreCiudades {
+  id     String         @id @default(cuid())
+  codigo String         @unique
+  estado AlquilerEstado @default(A_CONFIRMAR)
+
+  clienteId        String?
+  cliente          User?   @relation("AlquileresCliente", fields: [clienteId], references: [id], onDelete: SetNull)
+  nombreContacto   String
+  telefonoContacto String?
+  emailContacto    String?
+
+  choferId String?
+  chofer   User?   @relation("AlquileresChofer", fields: [choferId], references: [id], onDelete: SetNull)
+
+  ciudadOrigen  String
+  ciudadDestino String
+  fecha         DateTime
+  // "por_horas" | "interurbano"
+  modalidad     String
+  horas         Int?
+  notas         String?
+
+  // Precio fijado manualmente por el admin al confirmar.
+  precioConfirmado Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([estado, createdAt])
+  @@index([clienteId])
+  @@map("alquiler_entre_ciudades")
+}
+
+// ============================================================
+// Notificaciones (in-app; el envío por email se registra con canal EMAIL)
+// ============================================================
+
+model Notificacion {
+  id     String            @id @default(cuid())
+  userId String
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tipo   String
+  titulo String
+  cuerpo String
+  canal  NotificacionCanal @default(IN_APP)
+  leida  Boolean           @default(false)
+  url    String?
+  createdAt DateTime       @default(now())
+
+  @@index([userId, leida, createdAt])
+  @@map("notificacion")
+}
+
+// ============================================================
+// Chat por reserva (beta, sin garantías de entrega)
+// ============================================================
+
+model Mensaje {
+  id        String   @id @default(cuid())
+  reservaId String
+  reserva   Reserva  @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  autorId   String
+  autor     User     @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  cuerpo    String
+  createdAt DateTime @default(now())
+
+  @@index([reservaId, createdAt])
+  @@map("mensaje")
+}
+
+// ============================================================
+// Reseñas (una por reserva finalizada, del cliente dueño)
+// ============================================================
+
+// ============================================================
+// Reportes / incidencias (soporte)
+// ============================================================
+
+model Reporte {
+  id          String        @id @default(cuid())
+  autorId     String
+  autor       User          @relation("ReportesAutor", fields: [autorId], references: [id], onDelete: Cascade)
+  // Reserva relacionada (opcional: puede ser un reporte general).
+  reservaId   String?
+  reserva     Reserva?      @relation(fields: [reservaId], references: [id], onDelete: SetNull)
+  categoria   String
+  descripcion String
+  estado      ReporteEstado @default(ABIERTO)
+  notaAdmin   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([estado, createdAt])
+  @@map("reporte")
+}
+
+model Resena {
+  id        String  @id @default(cuid())
+  reservaId String  @unique
+  reserva   Reserva @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  clienteId String
+  cliente   User    @relation("ResenasCliente", fields: [clienteId], references: [id], onDelete: Cascade)
+  choferId  String?
+  chofer    User?   @relation("ResenasChofer", fields: [choferId], references: [id], onDelete: SetNull)
+
+  puntuacion  Int // 1..5 (validado en aplicación)
+  titulo      String
+  descripcion String
+  // Moderación: una reseña oculta no se muestra fuera del panel de admin.
+  oculta      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([choferId])
+  @@map("resena")
+}
