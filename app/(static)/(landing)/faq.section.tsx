@@ -5,14 +5,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Button } from "@/components/ui/button"
-import { Field } from "@/components/ui/field"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
-import { RiMailFill, RiSendInsFill } from "@remixicon/react"
 
 const FAQS = [
   {
@@ -43,7 +35,7 @@ const FAQS = [
 
 export function Faq() {
   return (
-    <section className="container-screen-2xl grid grid-cols-[.8fr_1fr] gap-20 py-30 sm:py-48">
+    <section className="container-screen-2xl grid grid-cols-1 gap-10 py-20 sm:py-32 lg:grid-cols-[.8fr_1fr] lg:gap-20 lg:py-48">
       <div>
         <RevealText
           as="h2"
@@ -51,21 +43,11 @@ export function Faq() {
           text={`Preguntas <primary>Frecuentes</primary>`}
           styles={{ primary: "text-primary" }}
         />
-        <p className="mb-30 text-lg">
+        <p className="mb-10 text-base sm:mb-16 sm:text-lg lg:mb-30">
           Lorem ipsum dolor sit amet consectetur adipisicing elit. Quis dolorem alias temporibus, consequatur animi assumenda itaque excepturi quas ut ad. Error numquam possimus iste officia, nulla vero assumenda aspernatur repellendus?
         </p>
-
-        <Field orientation="horizontal">
-          <InputGroup className="bg-card border-primary">
-            <InputGroupInput className="text-lg!" placeholder="tuemail@mail.com" />
-            <InputGroupAddon>
-              <RiMailFill className="size-6" />
-            </InputGroupAddon>
-          </InputGroup>
-          <Button className="shrink-0">Enviar <RiSendInsFill /> </Button>
-        </Field>
       </div>
-      <div className="pt-20">
+      <div className="pt-2 lg:pt-20">
       <Accordion
         className="mx-auto flex flex-col gap-4 border-none!"
         defaultValue={[0]}
@@ -74,12 +56,12 @@ export function Faq() {
           <AccordionItem
             key={i}
             value={i}
-            className="border-b-none rounded-xl bg-card px-3 shadow-none data-open:bg-card!"
+            className="border-b-none md:rounded-xl md:bg-card px-0 md:px-3 shadow-none sm:data-open:bg-card!"
           >
-            <AccordionTrigger className="py-5 text-xl">
+            <AccordionTrigger className="p-0 md:p-4 py-5 text-base sm:text-xl">
               {faq.q}
             </AccordionTrigger>
-            <AccordionContent className="text-lg">{faq.a}</AccordionContent>
+            <AccordionContent className="text-sm sm:text-lg">{faq.a}</AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>

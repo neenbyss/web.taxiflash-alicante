@@ -14,7 +14,7 @@ export async function buscarDireccion(
   consulta: string,
   signal?: AbortSignal
 ): Promise<ResultadoGeocoding[]> {
-  const url = `${NOMINATIM}/search?format=jsonv2&limit=5&q=${encodeURIComponent(consulta)}`
+  const url = `${NOMINATIM}/search?format=jsonv2&limit=5&countrycodes=es&q=${encodeURIComponent(consulta)}`
   const res = await fetch(url, {
     signal,
     headers: { Accept: "application/json" },

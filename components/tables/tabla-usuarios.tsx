@@ -96,7 +96,7 @@ export function TablaUsuarios() {
       {usuarios.isLoading ? (
         <Skeleton className="h-64 rounded-2xl" />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border">
+        <div className="min-w-0 max-w-full overflow-hidden rounded-2xl bg-card">
           <Table>
             <TableHeader>
               <TableRow>

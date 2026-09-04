@@ -17,7 +17,8 @@ export function useIsMobile() {
   return React.useSyncExternalStore(
     subscribe,
     () => window.matchMedia(QUERY).matches,
-    // Snapshot de servidor: no hay viewport, asume escritorio.
-    () => false
+    // El servidor no conoce el viewport. Partimos de la variante liviana para
+    // que un móvil nunca monte primero la experiencia animada de escritorio.
+    () => true
   )
 }

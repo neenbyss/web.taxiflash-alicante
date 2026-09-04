@@ -1,4 +1,4 @@
-import { RiCheckLine } from "@remixicon/react"
+import { RiCheckLine } from "@/components/icons"
 
 import {
   FASE_RECOGIDA_LABEL,

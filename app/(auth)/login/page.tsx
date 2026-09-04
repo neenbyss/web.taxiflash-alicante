@@ -1,4 +1,4 @@
-import { RiStarFill } from "@remixicon/react"
+import { RiStarFill } from "@/components/icons"
 import Image from "next/image"
 import { Suspense } from "react"
 
@@ -36,6 +36,7 @@ export default function LoginPage() {
         <Image
           alt=""
           src="/images/alicante.png"
+          sizes="(max-width: 1024px) 0px, 50vw"
           fill
           priority
           className="object-cover"

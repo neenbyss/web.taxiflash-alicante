@@ -1,63 +1,49 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "motion/react";
+import { m, useReducedMotion } from "motion/react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 type Orientation = "top" | "bottom" | "left" | "right";
 
-type TextRevealProps = {
-  children: React.ReactNode;
-  className?: string;
-  orientation?: Orientation;
-  duration?: number;
-  delay?: number;
-  loop?: boolean; // true = se repite al re-entrar al viewport
-  marginViewport?: string;
-};
-
-const orientations: Record<
-  Orientation,
-  { x?: number | string; y?: number | string }[]
-> = {
-  top: [{ y: "-100%" }, { y: 0 }],
-  bottom: [{ y: "100%" }, { y: 0 }],
-  left: [{ x: "-100%" }, { x: 0 }],
-  right: [{ x: "100%" }, { x: 0 }],
-};
-
-export function TextReveal({
+function TextReveal({
   children,
   className,
-  orientation = "bottom",
+  orientation,
+  duration,
+  delay,
+  loop,
   marginViewport,
-  loop = false,
-  duration = 1.6,
-  delay = 0,
-}: TextRevealProps) {
-  const [ended, setEnded] = React.useState(false);
-return (
-<motion.span
-  data-ended={ended}
-  className={cn(
-    "relative inline-block text-inherit data-[ended=true]:overflow-visible! overflow-clip -my-3"
-  )}
->
-  <motion.span
-    className={cn("block text-inherit", className)}
-    initial={orientations[orientation][0]}
-    whileInView={orientations[orientation][1]}
-    transition={{ duration, delay, ease: [0.26, 0.66, 0, 0.98] }}
-    viewport={{
-      once: !loop,
-      margin: marginViewport,
-    }}
-    onAnimationComplete={() => setEnded(true)}
-  >
-    {children}
-  </motion.span>
-</motion.span>
-)
+}: {
+  children: React.ReactNode;
+  className?: string;
+  orientation: Orientation;
+  duration: number;
+  delay: number;
+  loop: boolean;
+  marginViewport?: string;
+}) {
+  const offset = {
+    top: { y: "-100%" },
+    bottom: { y: "100%" },
+    left: { x: "-100%" },
+    right: { x: "100%" },
+  }[orientation];
+
+  return (
+    <span className="relative -my-3 inline-block overflow-clip text-inherit">
+      <m.span
+        className={cn("block text-inherit", className)}
+        initial={{ ...offset, opacity: 0 }}
+        whileInView={{ x: 0, y: 0, opacity: 1 }}
+        transition={{ duration, delay, ease: [0.26, 0.66, 0, 0.98] }}
+        viewport={{ once: !loop, margin: marginViewport }}
+      >
+        {children}
+      </m.span>
+    </span>
+  );
 }
 
 type StylesMap = Record<string, string>;
@@ -136,12 +122,14 @@ export function RevealText({
   as: As = "span",
   split = "words",
   orientation = "bottom",
-  duration = 1.6,
+  duration = 0.65,
   delay = 0,
-  stagger = 0.05,
+  stagger = 0.035,
   loop = false,
   marginViewport,
 }: RevealTextProps) {
+  const isMobile = useIsMobile();
+  const reduceMotion = useReducedMotion();
   type Item =
     | { kind: "br"; key: string }
     | { kind: "text"; key: string; text: string } // espacios
@@ -216,7 +204,13 @@ export function RevealText({
           return <React.Fragment key={item.key}>{item.text}</React.Fragment>;
         }
 
-        const d = delay + item.idx * stagger;
+        if (isMobile || reduceMotion) {
+          return (
+            <span key={item.key} className={item.className}>
+              {item.text}
+            </span>
+          );
+        }
 
         return (
           <TextReveal
@@ -224,7 +218,7 @@ export function RevealText({
             className={item.className}
             orientation={orientation}
             duration={duration}
-            delay={d}
+            delay={delay + item.idx * stagger}
             loop={loop}
             marginViewport={marginViewport}
           >

@@ -1,6 +1,6 @@
 "use client"
 
-import { RiTimeLine } from "@remixicon/react"
+import { RiTimeLine } from "@/components/icons"
 import { useEffect, useState } from "react"
 
 type EsperaCountdownProps = {

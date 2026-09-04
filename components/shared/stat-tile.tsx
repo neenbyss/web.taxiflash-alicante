@@ -1,4 +1,4 @@
-import type { RemixiconComponentType } from "@remixicon/react"
+import type { RemixiconComponentType } from "@/components/icons"
 
 import { cn } from "@/lib/utils"
 

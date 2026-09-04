@@ -1,253 +1,205 @@
 # TaxiFlash
 
-Prototipo funcional de gestión de reservas de taxi **por formulario**: el
-cliente solicita, la reserva queda **pendiente**, y un chofer la acepta
-manualmente desde su portal (o el admin la asigna). **No** es un sistema de
-matching en tiempo real: no hay geolocalización en vivo, colas con TTL ni
-distribución automática entre choferes.
+Aplicación de reservas de taxi con portales de cliente, chofer y administración.
+Utiliza Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui, tRPC,
+Prisma, PostgreSQL y Better Auth.
 
-## Stack
+## Inicio rápido
 
-Next.js 16 (App Router, `proxy.ts`) · React 19 · TypeScript estricto ·
-shadcn/ui (Base UI) · tRPC v11 · PostgreSQL + Prisma 7 · better-auth ·
-Zustand · React Hook Form + Zod v4 · Nodemailer (opcional) ·
-Leaflet/OpenStreetMap · Docker Compose.
-
----
-
-## 🚀 Guía de ejecución paso a paso
-
-### Requisitos previos
-
-| Herramienta | Versión | Para qué |
-| ----------- | ------- | -------- |
-| Node.js | 20.9 o superior | ejecutar la app en modo desarrollo |
-| pnpm | 9+ (`npm i -g pnpm`) | gestor de paquetes del proyecto |
-| Docker Desktop | reciente | PostgreSQL (y opcionalmente toda la app) |
-
-### Opción A — Desarrollo local (recomendada para trabajar)
-
-**Paso 1.** Clona/abre el proyecto y crea tu archivo de entorno:
+Requisitos: Node.js 22 o superior, Yarn y Docker Desktop iniciado.
 
 ```bash
-cp .env.example .env
+corepack enable
+yarn install --frozen-lockfile
+copy .env.example .env
+yarn env:check
+yarn dev:setup
+yarn dev
 ```
 
-**Paso 2.** Abre `.env` y revisa lo mínimo:
+`yarn dev:setup` levanta PostgreSQL y Mailpit, genera Prisma, aplica las
+migraciones y ejecuta el seed. La web estará en `http://localhost:3500`.
 
-- `BETTER_AUTH_SECRET` → pon cualquier cadena larga aleatoria
-  (ej. genera una con `openssl rand -hex 32` o escribe 40+ caracteres a mano).
-- `SMTP_HOST` → **déjalo vacío si no tienes servicio de correo**
-  (ver sección "¿Sin servicio de email?"). Todo funciona igual.
-- El resto ya tiene valores que funcionan tal cual.
+Para probar correos reales con Resend, configura `EMAIL_PROVIDER="resend"`,
+`RESEND_API_KEY` y un `EMAIL_FROM` autorizado. Para ver los correos únicamente
+en Mailpit, usa `EMAIL_PROVIDER="smtp"`; no necesitas una API externa.
 
-**Paso 3.** Instala las dependencias:
+| Servicio   | Dirección               |
+| ---------- | ----------------------- |
+| Aplicación | `http://localhost:3500` |
+| PostgreSQL | `localhost:5433`        |
+| Mailpit    | `http://localhost:8025` |
+| SMTP local | `localhost:1025`        |
+
+## Cuentas y datos de prueba
+
+Estas credenciales son exclusivamente para desarrollo local:
+
+| Rol           | Correo                         | Contraseña    | Portal      |
+| ------------- | ------------------------------ | ------------- | ----------- |
+| Administrador | `admin@taxiflash.local`        | `Admin123!`   | `/admin`    |
+| Chofer        | `chofer@taxiflash.local`       | `Chofer123!`  | `/driver`   |
+| Chofer        | `elena.chofer@taxiflash.local` | `Chofer123!`  | `/driver`   |
+| Chofer        | `david.chofer@taxiflash.local` | `Chofer123!`  | `/driver`   |
+| Cliente       | `cliente@taxiflash.local`      | `Cliente123!` | `/customer` |
+| Cliente       | `javier@taxiflash.local`       | `Cliente123!` | `/customer` |
+| Cliente       | `laura@taxiflash.local`        | `Cliente123!` | `/customer` |
+| Cliente       | `pablo@taxiflash.local`        | `Cliente123!` | `/customer` |
+
+El seed crea o actualiza 8 usuarios, permisos por rol, 12 reservas
+(`TF-1831` a `TF-1842`), 3 alquileres (`A-4099` a `A-4101`), 4 reseñas,
+7 notificaciones y 2 reportes. Es idempotente: puede ejecutarse varias veces.
 
 ```bash
-pnpm install
+yarn db:generate
+yarn db:deploy
+yarn db:seed
 ```
 
-**Paso 4.** Levanta la base de datos (y Mailpit, inofensivo si no usas email):
+Si el servidor estaba abierto durante una migración, reinicia `yarn dev` para
+que cargue el cliente de Prisma actualizado.
+
+## Comandos habituales
+
+| Comando            | Uso                                         |
+| ------------------ | ------------------------------------------- |
+| `yarn dev`         | Inicia Next.js en el puerto 3500            |
+| `yarn dev:setup`   | Prepara infraestructura, migraciones y seed |
+| `yarn infra:up`    | Inicia PostgreSQL y Mailpit                 |
+| `yarn infra:down`  | Detiene contenedores conservando datos      |
+| `yarn db:generate` | Regenera el cliente de Prisma               |
+| `yarn db:migrate`  | Crea una migración de desarrollo            |
+| `yarn db:deploy`   | Aplica migraciones existentes               |
+| `yarn db:seed`     | Carga o actualiza datos de prueba           |
+| `yarn db:studio`   | Abre Prisma Studio                          |
+| `yarn env:check`   | Valida el entorno sin mostrar secretos      |
+| `yarn lint`        | Ejecuta ESLint                              |
+| `yarn typecheck`   | Comprueba TypeScript                        |
+| `yarn build`       | Genera el build de producción               |
 
 ```bash
-docker compose up -d db mailpit
-```
-
-Esto deja PostgreSQL escuchando en `localhost:5433` con los datos persistidos
-en un volumen de Docker.
-
-**Paso 5.** Crea las tablas (migraciones):
-
-```bash
-pnpm db:migrate
-```
-
-**Paso 6.** Carga los datos iniciales (catálogo de permisos + cuentas demo):
-
-```bash
-pnpm db:seed
-```
-
-**Paso 7.** Arranca el servidor de desarrollo:
-
-```bash
-pnpm dev
-```
-
-**Paso 8.** Abre http://localhost:3500 y entra con una cuenta demo:
-
-| Rol     | Email                     | Contraseña    | Portal |
-| ------- | ------------------------- | ------------- | ------ |
-| Admin   | `admin@taxiflash.local`   | `Admin123!`   | `/admin` |
-| Chofer  | `chofer@taxiflash.local`  | `Chofer123!`  | `/chofer` |
-| Cliente | `cliente@taxiflash.local` | `Cliente123!` | `/cliente` |
-
-**Paso 9 (prueba del flujo completo).**
-1. Entra como **cliente** → `/cliente/reservar`, fija origen y destino en el mapa y envía. El contacto se toma de tu perfil (no se pide). Guarda el código `R-XXXXXXXX`.
-2. Entra como **chofer** → pestaña "Pendientes" → **Aceptar** → "Iniciar viaje" → "Finalizar viaje".
-3. Vuelve como **cliente**: cuando el chofer finalice el viaje podrás dejar una **reseña** desde el detalle.
-4. Entra como **admin** para ver reportes, asignar reservas y gestionar usuarios/permisos. Desde el menú de usuario (arriba a la derecha) puedes **cambiar de portal** y operar también como chofer.
-
-> **Reservar requiere cuenta.** Un visitante sin sesión no puede crear reservas
-> ni alquileres; se le lleva a registro/login. El único flujo público es
-> consultar el estado de una reserva por su código en `/reserva`.
-
-### Opción B — Todo con Docker (app incluida)
-
-```bash
-cp .env.example .env        # edita BETTER_AUTH_SECRET (obligatorio)
+docker compose ps
+docker compose logs -f db
 docker compose up --build
 ```
 
-Esto construye la imagen, levanta PostgreSQL y Mailpit, aplica migraciones y
-seed automáticamente (servicio `migrate`) y arranca la app en
-http://localhost:3500. Para detener todo: `docker compose down`
-(los datos de la BD se conservan; `docker compose down -v` los borra).
+Para inspeccionar PostgreSQL:
 
-### Comandos útiles del día a día
-
-| Comando | Descripción |
-| ------- | ----------- |
-| `pnpm dev` | servidor de desarrollo (hot reload) |
-| `pnpm build` + `pnpm start` | build y servidor de producción |
-| `pnpm typecheck` / `pnpm lint` | verificación de tipos / linter |
-| `pnpm db:migrate` | crear/aplicar migraciones en dev |
-| `pnpm db:seed` | re-ejecutar seed (idempotente, no duplica) |
-| `pnpm db:studio` | Prisma Studio (explorador visual de la BD) |
-| `docker compose up -d db mailpit` | solo infraestructura |
-| `docker compose logs -f app` | logs de la app en Docker |
-
----
-
-## 📧 ¿Sin servicio de email? (modo por defecto)
-
-El proyecto está preparado para funcionar **sin ningún proveedor de correo**:
-
-- Si `SMTP_HOST` está **vacío** en el `.env`, el servicio de email queda
-  deshabilitado: no se intenta enviar nada, no hay errores, y todos los flujos
-  (reservas, aceptación, reseñas, alquileres…) funcionan normal. Los usuarios
-  se enteran de todo por las **notificaciones in-app** (campana en cada portal).
-- Aunque estuviera configurado, el envío es *fire-and-forget*: un fallo de
-  SMTP solo se loguea, nunca rompe la operación.
-
-Cuando tengas servicio de correo, hay dos caminos:
-
-1. **Probar en local sin proveedor real**: pon `SMTP_HOST="localhost"` y
-   `SMTP_PORT="1025"` — los correos van a Mailpit (bandeja falsa en
-   http://localhost:8025, no sale nada a internet).
-2. **Producción**: rellena `SMTP_*` con los datos de tu proveedor
-   (Brevo, SES, Gmail SMTP, etc.). O migra a Resend reimplementando solo
-   `server/services/email.service.ts`.
-
-Lo mismo aplica a **Google OAuth**: si `GOOGLE_CLIENT_ID`/`SECRET` están
-vacíos, el botón de Google no se muestra y el login por email/contraseña
-funciona igual.
-
----
-
-## 🔒 Seguridad de páginas y rutas
-
-> **Nota sobre Next.js 16**: el clásico `middleware.ts` fue **renombrado a
-> `proxy.ts`** (misma función: código que corre en el servidor antes de cada
-> request). Este proyecto ya lo usa; si buscas "middleware", es
-> [proxy.ts](proxy.ts).
-
-La protección tiene **tres capas** (defensa en profundidad):
-
-1. **`proxy.ts` (middleware de Next 16)** — sin tocar la base de datos:
-   - `/cliente`, `/chofer`, `/admin` sin cookie de sesión → redirige a
-     `/login?callbackUrl=…`.
-   - `/login` y `/register` con sesión activa → redirige al portal del rol.
-2. **Layout de cada portal** — `requireRole()` valida la **sesión real** y el
-   rol en el servidor; un cliente que entre a `/admin` es redirigido a su
-   portal, y una cuenta desactivada es expulsada.
-3. **Procedimientos tRPC** — cada operación vuelve a exigir sesión, rol y/o
-   permiso (`protectedProcedure`, `roleProcedure`, `permissionProcedure`),
-   además de rate limiting por usuario/IP.
-
-Complementos:
-
-- **Cabeceras de seguridad** globales en [next.config.ts](next.config.ts):
-  `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
-  `Referrer-Policy`, `Permissions-Policy`.
-- Validación Zod en cliente **y** servidor (mismos esquemas en `lib/validations/`).
-- Anti-bots en registro: honeypot + máx. 5 cuentas/IP por 24h + rate limit.
-- Sanitización de texto libre y selects explícitos que no exponen datos de
-  otros usuarios (el contacto del chofer solo se ve tras la aceptación).
-
----
-
-## 📁 Estructura del proyecto
-
-```
-app/                        # RUTAS (route groups: no cambian la URL)
-  (publico)/                #   sin cuenta: home + consulta de reserva por código
-  (auth)/                   #   login y registro
-  (portales)/               #   cliente/ chofer/ admin/ (layout + guard de rol c/u)
-                            #   + loading.tsx compartido (skeleton de segmento)
-  api/                      #   better-auth y tRPC
-  layout.tsx                #   raíz: providers, fuentes, toaster
-  error.tsx / not-found.tsx #   error boundary y 404 (convenciones Next.js)
-
-components/                 # COMPONENTES agrupados por tipo
-  ui/                       #   shadcn/ui base (button, dialog, table…)
-  forms/                    #   formularios RHF+zod (reserva, alquiler, login, registro, perfil…)
-  dialogs/                  #   diálogos reutilizables (confirmar, reseña, asignar, usuario, permisos…)
-  tables/                   #   tablas del admin (reservas, usuarios, reseñas, alquileres, matriz permisos)
-  cards/                    #   cards de entidades (reserva, reseña)
-  lists/                    #   listados por portal (mis reservas, pendientes, mis viajes…)
-  views/                    #   vistas compuestas (detalle de reserva, estado público, reportes)
-  layout/                   #   shell de portal y campana de notificaciones
-  mapa/                     #   Leaflet: selector de puntos y buscador de direcciones
-  chat/                     #   chat por reserva (beta)
-  providers/                #   tRPC/React Query y theme
-  shared/                   #   piezas pequeñas transversales (badge de estado, estrellas)
-
-hooks/                      # useNotificaciones, usePermisos
-stores/                     # zustand: borrador de reserva (mapa ⇄ formulario)
-lib/                        # validations/ (zod), permisos, roles, sanitize, formato, geocoding…
-server/                     # SOLO servidor
-  auth.ts                   #   better-auth (credenciales + Google, linking, anti-bot)
-  trpc.ts                   #   contexto + middlewares (auth, rol, permiso, rate limit)
-  routers/                  #   un router tRPC por dominio + _app.ts
-  services/                 #   tarifa, email, notificaciones, permisos, códigos
-prisma/                     # schema, migraciones, seed
-proxy.ts                    # middleware de Next 16 (protección de rutas)
-docker-compose.yml          # db + mailpit + migrate + app
+```bash
+docker compose exec db psql -U taxiflash -d taxiflash
 ```
 
----
+```sql
+SELECT email, role, activo FROM "user" ORDER BY email;
+SELECT COUNT(*) FROM reserva;
+SELECT COUNT(*) FROM notificacion;
+```
 
-## Decisiones técnicas
+Sal con `\q`. `docker compose down` conserva los datos; `docker compose down
+-v` elimina definitivamente el volumen local.
 
-- **Reservar requiere sesión**: `reservas.crear` y `alquiler.crear` son
-  procedimientos protegidos; el contacto se toma del perfil del usuario, no del
-  formulario. El único flujo anónimo es consultar una reserva por su código.
-- **Roles unificados (admin superconjunto)**: los roles siguen siendo
-  `CLIENTE | CHOFER | ADMIN`, pero `requireRole` deja pasar a un ADMIN a
-  cualquier portal, y el menú de usuario ofrece un **selector de portal**. Así
-  un admin puede además operar como chofer sin necesidad de multi-rol. La
-  navegación de los tres portales vive en `lib/navegacion.ts` (sin duplicar).
-- **Permisos**: catálogo en BD (`Permiso`) + `RolPermiso` (defaults por rol,
-  editables en `/admin/permisos`) + `UserPermiso` (overrides individuales).
-  Permisos efectivos = rol ± overrides. Salvaguardas: ADMIN no puede perder
-  `gestionar_permisos` ni desactivarse a sí mismo.
-- **Tarifa**: siempre calculada en servidor (OSRM público para distancia de
-  ruta, fallback haversine × 1.3). La UI aclara que es estimada y el cobro
-  real es por taxímetro.
-- **Aceptación sin carreras**: update condicional sobre estado `PENDIENTE`;
-  el segundo chofer recibe un CONFLICT claro.
-- **Email**: Nodemailer sobre SMTP genérico (sin API key), deshabilitable por
-  completo. Mailpit para desarrollo.
-- **Mapa**: Leaflet + OSM + Nominatim, todo sin API keys.
-- **Chat**: beta explícita, polling 5s, solo participantes de la reserva.
+## Variables de entorno
 
-## Limitaciones conocidas (prototipo)
+Parte siempre de `.env.example`.
 
-- Rate limiting y buckets en memoria: válidos para una sola instancia.
-- Polling en lugar de websockets/SSE para notificaciones y chat.
-- Nominatim/OSRM públicos: sin SLA, con límites de peticiones.
-- Push web no implementado (extra opcional; iría con Web Push API + service
-  worker, sin apps nativas).
-- Sin verificación de email ni recuperación de contraseña (better-auth lo
-  soporta; requiere servicio de correo configurado).
+| Variable                  | Uso                                                                 |
+| ------------------------- | ------------------------------------------------------------------- |
+| `DATABASE_URL`            | Desde el host debe usar PostgreSQL en `localhost:5433`              |
+| `POSTGRES_USER`           | Usuario creado por PostgreSQL en Docker                             |
+| `POSTGRES_PASSWORD`       | Contraseña local de PostgreSQL; usa otra en producción              |
+| `POSTGRES_DB`             | Nombre de la base creada por Docker                                 |
+| `BETTER_AUTH_SECRET`      | Secreto aleatorio de al menos 32 caracteres                         |
+| `BETTER_AUTH_URL`         | Origen exacto de la aplicación                                      |
+| `NEXT_PUBLIC_APP_URL`     | Origen público, sin secretos                                        |
+| `TRUSTED_PROXY_HEADER`    | Cabecera sobrescrita por el proxy de producción                     |
+| `GOOGLE_CLIENT_ID`        | Client ID del OAuth de Google; déjalo vacío para ocultar Google     |
+| `GOOGLE_CLIENT_SECRET`    | Secreto OAuth de Google; debe configurarse junto con el ID          |
+| `EMAIL_PROVIDER`          | `resend`, `smtp` o `disabled`                                       |
+| `RESEND_API_KEY`          | API key de Resend; solo servidor, nunca uses prefijo `NEXT_PUBLIC_` |
+| `SMTP_HOST`               | Host SMTP; `localhost` cuando se usa Mailpit                        |
+| `SMTP_PORT`               | Puerto SMTP; Mailpit usa `1025`                                     |
+| `SMTP_USER` / `SMTP_PASS` | Credenciales SMTP cuando el proveedor las requiere                  |
+| `SMTP_SECURE`             | `true` para TLS directo (normalmente puerto 465)                    |
+| `EMAIL_FROM`              | Remitente completo, por ejemplo `TaxiFlash <acceso@tudominio.es>`   |
+| `TARIFA_BASE`             | Bajada de bandera usada por la estimación                           |
+| `TARIFA_POR_KM`           | Importe estimado por kilómetro                                      |
+| `TARIFA_MINIMA`           | Importe mínimo estimado                                             |
+| `SEED_ADMIN_EMAIL`        | Correo del administrador local creado por el seed                   |
+| `SEED_ADMIN_PASSWORD`     | Contraseña local de ese administrador                               |
+
+Configuración mínima para probar Resend:
+
+```dotenv
+EMAIL_PROVIDER="resend"
+RESEND_API_KEY="re_..."
+EMAIL_FROM="TaxiFlash <onboarding@resend.dev>"
+```
+
+`onboarding@resend.dev` sirve para las pruebas permitidas por Resend. Para
+enviar a usuarios reales debes verificar tu dominio en Resend y cambiar
+`EMAIL_FROM` a una dirección de ese dominio.
+
+Alternativa local con Nodemailer y Mailpit:
+
+```dotenv
+EMAIL_PROVIDER="smtp"
+SMTP_HOST="localhost"
+SMTP_PORT="1025"
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_SECURE="false"
+EMAIL_FROM="TaxiFlash <no-reply@taxiflash.local>"
+```
+
+Después de modificar `.env`, reinicia `yarn dev` y comprueba la configuración:
+
+```bash
+yarn env:check
+```
+
+## Registro y recuperación de acceso
+
+El registro por correo no crea usuarios al enviar el formulario. El servidor
+genera un OTP de seis dígitos y un enlace de un solo uso, guarda únicamente sus
+resúmenes criptográficos y los invalida después de diez minutos. Solo después
+de verificar el correo se permite completar el perfil y crear la contraseña.
+
+- Cada código admite un máximo de cinco intentos.
+- Solicitar otro correo invalida el código y enlace anteriores.
+- Hay límites separados por dirección de correo e IP.
+- La prueba de correo se guarda en una cookie `HttpOnly`, firmada y temporal.
+- El endpoint normal de alta rechaza registros que no tengan esa prueba.
+- La recuperación de contraseña usa un OTP independiente y no revela si el
+  correo pertenece a una cuenta.
+- Google OAuth funciona como alternativa cuando ambas variables de Google
+  están configuradas.
+
+Genera secretos con `openssl rand -hex 32`. Nunca publiques `.env` ni uses las
+contraseñas del seed en producción.
+
+## Seguridad antes de producción
+
+- Cambia todos los secretos y no ejecutes el seed en producción.
+- Usa HTTPS y coloca CDN/WAF o proxy inverso delante de Next.js.
+- Bloquea el acceso directo al origen y sobrescribe la cabecera de IP confiable.
+- Sustituye el rate limit en memoria por Redis/Upstash si usas varias réplicas.
+- En Resend verifica el dominio, configura SPF/DKIM y separa las API keys de
+  desarrollo y producción.
+- Limita solicitudes, conexiones, cabeceras y tamaño del body en el proxy.
+- Configura copias cifradas de PostgreSQL y prueba su restauración.
+- Ejecuta lint, TypeScript, build y auditoría de dependencias en CI.
+- Un DDoS volumétrico requiere defensa previa mediante CDN/WAF y rate limiting
+  distribuido; la aplicación por sí sola no puede detenerlo.
+
+En caso de fuga, aísla el origen, conserva logs, rota secretos y credenciales,
+revoca sesiones y determina los datos afectados.
+
+## Problemas frecuentes
+
+- **Usuario no encontrado después del seed:** ejecuta los tres comandos de base
+  anteriores y reinicia `yarn dev`.
+- **Prisma no conecta:** confirma `docker compose ps` y que `DATABASE_URL` use
+  `localhost:5433` cuando Next.js corre fuera de Docker.
+- **No llegan correos:** revisa Mailpit en `http://localhost:8025`.
+- **Puerto ocupado:** no ejecutes simultáneamente `yarn dev` y el servicio `app`
+  de Docker Compose en el puerto 3500.

@@ -1,6 +1,6 @@
 "use client"
 
-import { RiFocus3Line, RiMapPin2Line, RiSearchLine, RiTimeLine } from "@remixicon/react"
+import { RiFocus3Line, RiMapPin2Line, RiSearchLine, RiTimeLine } from "@/components/icons"
 import dynamic from "next/dynamic"
 import { useMemo, useState } from "react"
 

@@ -65,7 +65,7 @@ export function ReservasPendientes() {
 
   if (!pendientes.data?.length) {
     return (
-      <div className="rounded-2xl border border-dashed px-6 py-10 text-center text-sm text-muted-foreground">
+      <div className="rounded-3xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground">
         No hay reservas pendientes ahora mismo. Esta lista se actualiza sola.
       </div>
     )

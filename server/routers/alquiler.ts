@@ -50,7 +50,7 @@ export const alquilerRouter = createTRPCRouter({
         tipo: "alquiler_nuevo",
         titulo: "Nuevo alquiler a confirmar",
         cuerpo: `${alquiler.ciudadOrigen} → ${alquiler.ciudadDestino} (${alquiler.codigo})`,
-        url: "/admin/alquileres",
+        url: "/admin/rentals",
       })
 
       return { id: alquiler.id, codigo: alquiler.codigo }
@@ -118,7 +118,7 @@ export const alquilerRouter = createTRPCRouter({
           tipo: "alquiler_confirmado",
           titulo: "Alquiler confirmado",
           cuerpo,
-          url: "/cliente/alquileres",
+          url: "/customer/rentals",
           emailDestino: alquiler.emailContacto,
         })
       }
@@ -128,7 +128,7 @@ export const alquilerRouter = createTRPCRouter({
           tipo: "alquiler_asignado",
           titulo: "Alquiler asignado",
           cuerpo: `Se te asignó el alquiler ${alquiler.codigo}: ${alquiler.ciudadOrigen} → ${alquiler.ciudadDestino}.`,
-          url: "/chofer",
+          url: "/driver",
         })
       }
       return { ok: true }
@@ -152,7 +152,7 @@ export const alquilerRouter = createTRPCRouter({
           tipo: "alquiler_rechazado",
           titulo: "Alquiler rechazado",
           cuerpo: `Tu solicitud de alquiler ${alquiler.codigo} no pudo ser atendida.`,
-          url: "/cliente/alquileres",
+          url: "/customer/rentals",
           emailDestino: alquiler.emailContacto,
         })
       }

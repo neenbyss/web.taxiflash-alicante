@@ -23,7 +23,12 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "../ui/input-group"
-import { RiEyeFill, RiEyeOffFill, RiLockFill, RiMailFill } from "@remixicon/react"
+import {
+  RiEyeFill,
+  RiEyeOffFill,
+  RiLockFill,
+  RiMailFill,
+} from "@/components/icons"
 import { useState } from "react"
 
 type LoginFormProps = {
@@ -49,6 +54,11 @@ export function LoginForm({
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl")
+  const safeCallbackUrl =
+    callbackUrl?.startsWith("/") && !callbackUrl.startsWith("//")
+      ? callbackUrl
+      : "/redirigir"
+  const existingAccount = searchParams.get("notice") === "cuenta-existente"
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -65,12 +75,21 @@ export function LoginForm({
       toast.error(error.message ?? "Credenciales incorrectas.")
       return
     }
-    router.push(callbackUrl ?? "/redirigir")
+    router.push(safeCallbackUrl)
     router.refresh()
   })
 
   return (
     <div className="flex w-full flex-col gap-6">
+      {existingAccount && (
+        <div
+          role="status"
+          className="rounded-xl bg-primary/12 px-4 py-3 text-sm leading-relaxed"
+        >
+          Ese correo ya pertenece a una cuenta. Inicia sesión o recupera tu
+          contraseña.
+        </div>
+      )}
       {googleHabilitado && mostrarGoogle && (
         <>
           <GoogleButton texto="Continuar con Google" />
@@ -110,7 +129,11 @@ export function LoginForm({
                 <RiLockFill />
               </InputGroupAddon>
               <InputGroupAddon align="inline-end">
-                <InputGroupButton onClick={() => setShowPassword(s => !s)} variant="ghost" size="icon-xs">
+                <InputGroupButton
+                  onClick={() => setShowPassword((s) => !s)}
+                  variant="ghost"
+                  size="icon-xs"
+                >
                   {showPassword ? <RiEyeOffFill /> : <RiEyeFill />}
                 </InputGroupButton>
               </InputGroupAddon>
@@ -118,11 +141,14 @@ export function LoginForm({
             <FieldError errors={[errores.password]} />
           </Field>
 
-          <span className="block text-end text-sm text-muted-foreground -my-2">
-            ¿Olvidaste tu contraseña? <Link href="#" className="underline text-primary"> Restablecer contraseña </Link>
+          <span className="-my-2 block text-end text-sm text-muted-foreground">
+            ¿Olvidaste tu contraseña?{" "}
+            <Link href="/forgot-password" className="text-primary underline">
+              {" "}
+              Restablecer contraseña{" "}
+            </Link>
           </span>
           <Button
-
             type="submit"
             size="lg"
             disabled={form.formState.isSubmitting}
@@ -132,12 +158,14 @@ export function LoginForm({
         </FieldGroup>
       </form>
       {pie ?? (
-        <p className="text-center text-sm text-muted-foreground">
-          ¿No tienes cuenta?{" "}
-          <Link href="/register" className="underline underline-offset-4">
-            Regístrate
-          </Link>
-        </p>
+        <div className="text-center text-sm text-muted-foreground">
+          <p>
+            ¿No tienes cuenta?{" "}
+            <Link href="/register" className="underline underline-offset-4">
+              Regístrate
+            </Link>
+          </p>
+        </div>
       )}
     </div>
   )

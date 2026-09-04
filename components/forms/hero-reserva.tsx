@@ -1,6 +1,6 @@
 "use client"
 
-import { RiArrowRightLine } from "@remixicon/react"
+import { RiArrowRightLine } from "@/components/icons"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -40,7 +40,7 @@ export function HeroReserva() {
   const crear = trpc.reservas.crear.useMutation({
     onSuccess: (data) => {
       toast.success(`Reserva ${data.codigo} creada.`)
-      router.push(`/cliente/reservas/${data.id}`)
+      router.push(`/customer/bookings/${data.id}`)
     },
     onError: (error) => toast.error(error.message),
   })
@@ -68,10 +68,10 @@ export function HeroReserva() {
   const tarifa = estimacion.data?.tarifaEstimada ?? null
 
   return (
-    <div className="rounded-3xl bg-card p-6 text-card-foreground shadow-xl sm:p-10">
+    <div className="lg:rounded-3xl lg:bg-card lg:text-card-foreground lg:shadow-xl lg:p-10">
       <h2 className="mb-6 font-heading text-3xl sm:text-4xl">Reserva Ahora</h2>
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end">
         <DireccionAutocomplete
           label="Punto de partida"
           value={origen}
@@ -84,7 +84,7 @@ export function HeroReserva() {
           onChange={setDestino}
           placeholder="¿A dónde vas?"
         />
-        <div className="flex flex-col gap-1.5 w-64">
+        <div className="flex flex-col gap-1.5 w-full md:w-32 lg::w-64">
           <Label className="pl-2 text-sm font-medium text-secondary/70 dark:text-white/70">
             Fecha (opcional)
           </Label>
@@ -95,11 +95,11 @@ export function HeroReserva() {
           size="lg"
           onClick={reservar}
           disabled={crear.isPending}
-          className="h-12 gap-5 pl-5 pr-1 text-base font-medium"
+          className="h-12 gap-5 pl-5 pr-1.5 text-base justify-between font-medium"
         >
           {crear.isPending ? "Creando…" : "Reservar Ahora"}
 
-          <span className=" size-10 flex flex-col justify-center items-center bg-secondary-foreground text-foreground rounded-sm">
+          <span className=" size-9 flex flex-col justify-center items-center bg-secondary-foreground text-foreground rounded-sm">
             <RiArrowRightLine aria-hidden />
           </span>
         </Button>

@@ -1,6 +1,6 @@
 "use client"
 
-import { RiAddLine, RiCloseLine, RiMapPin2Fill } from "@remixicon/react"
+import { RiAddLine, RiCloseLine, RiMapPin2Fill } from "@/components/icons"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -25,21 +25,23 @@ function FilaPunto({ etiqueta, color, direccion, objetivo, onQuitar }: FilaProps
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors",
-        activo && "border-primary ring-2 ring-primary/30"
+        "group flex min-h-14 items-center gap-3 rounded-2xl bg-card px-3 py-2.5 text-sm shadow-sm transition-[background-color,box-shadow]",
+        activo && "bg-primary/15 shadow-[0_0_0_2px_var(--color-primary)]"
       )}
     >
-      <RiMapPin2Fill className={cn("size-4 shrink-0", color)} />
+      <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl bg-muted", color)}>
+        <RiMapPin2Fill className="size-4" />
+      </span>
       <button
         type="button"
-        className="min-w-0 flex-1 text-left"
+        className="min-w-0 flex-1 text-left leading-snug"
         onClick={() => setPuntoActivo(objetivo)}
         title="Fijar este punto con el mapa"
       >
-        <span className="mr-2 text-xs font-medium text-muted-foreground uppercase">
+        <span className="block text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
           {etiqueta}
         </span>
-        <span className={cn("break-words", !direccion && "text-muted-foreground italic")}>
+        <span className={cn("mt-0.5 block line-clamp-2 break-words", !direccion && "text-muted-foreground")}>
           {direccion ?? "Sin fijar — haz click en el mapa"}
         </span>
       </button>
@@ -64,7 +66,7 @@ export function PuntosRuta() {
     useReservaBorrador()
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2.5">
       <FilaPunto
         etiqueta="Origen"
         color="text-emerald-600"
@@ -92,7 +94,7 @@ export function PuntosRuta() {
           type="button"
           variant="ghost"
           size="sm"
-          className="self-start"
+          className="mt-1 w-full bg-card"
           onClick={agregarParada}
         >
           <RiAddLine data-icon="inline-start" />

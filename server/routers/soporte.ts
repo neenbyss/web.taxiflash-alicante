@@ -55,7 +55,7 @@ export const soporteRouter = createTRPCRouter({
         tipo: "reporte_nuevo",
         titulo: "Nuevo reporte",
         cuerpo: `${ctx.session.user.name} reportó una incidencia (${input.categoria}).`,
-        url: "/admin/reportes",
+        url: "/admin/reports",
       })
       return { id: reporte.id }
     }),

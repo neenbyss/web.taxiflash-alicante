@@ -1,6 +1,6 @@
 "use client"
 
-import { RiArrowRightLine, RiNotification3Line } from "@remixicon/react"
+import { RiArrowRightLine, RiNotification3Line } from "@/components/icons"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useRef, useState } from "react"

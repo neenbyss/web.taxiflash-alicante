@@ -4,12 +4,13 @@
 // calles (geometría OSRM vía tRPC; si falla, línea recta) y permite mostrar
 // tu ubicación con el GPS del navegador. No hay seguimiento en vivo.
 
-import { RiMapPin2Line } from "@remixicon/react"
+import { RiMapPin2Line } from "@/components/icons"
 import L from "leaflet"
 import { useEffect, useState } from "react"
 import {
   MapContainer,
   Marker,
+  Pane,
   Polyline,
   TileLayer,
   useMap,
@@ -22,17 +23,17 @@ import { Button } from "@/components/ui/button"
 import { trpc } from "@/lib/trpc"
 import type { PuntoRuta } from "@/lib/validations/reserva"
 
-function crearIcono(etiqueta: string, color: string) {
+function crearIcono(etiqueta: string, color: string, kind: "start" | "stop" | "end") {
   return L.divIcon({
     className: "",
-    html: `<div style="background:${color};color:#fff;border-radius:9999px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)">${etiqueta}</div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    html: `<div class="taxiflash-map-marker" data-kind="${kind}" style="--marker-color:${color}"><span>${etiqueta}</span></div>`,
+    iconSize: [34, 42],
+    iconAnchor: [17, 40],
   })
 }
-const ICONO_ORIGEN = crearIcono("O", "#059669")
-const ICONO_DESTINO = crearIcono("D", "#dc2626")
-const ICONO_YO = crearIcono("📍", "#2563eb")
+const ICONO_ORIGEN = crearIcono("O", "#17805c", "start")
+const ICONO_DESTINO = crearIcono("D", "#242422", "end")
+const ICONO_YO = crearIcono("Tú", "#2563eb", "stop")
 
 type LatLng = { lat: number; lng: number }
 
@@ -95,11 +96,11 @@ export default function RutaViajeMap({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="overflow-hidden rounded-2xl border">
+      <div className="relative isolate z-0 overflow-hidden rounded-2xl border">
         <MapContainer
           center={[origen.lat, origen.lng]}
           zoom={13}
-          className="h-72 w-full sm:h-80"
+          className="z-0 h-72 w-full sm:h-80"
           scrollWheelZoom
         >
           <TileLayer
@@ -112,16 +113,16 @@ export default function RutaViajeMap({
             <Marker
               key={i}
               position={[parada.lat, parada.lng]}
-              icon={crearIcono(String(i + 1), "#2563eb")}
+              icon={crearIcono(String(i + 1), "#f5b51b", "stop")}
             />
           ))}
           <Marker position={[destino.lat, destino.lng]} icon={ICONO_DESTINO} />
           {yo && <Marker position={[yo.lat, yo.lng]} icon={ICONO_YO} />}
           {linea.length > 1 && (
-            <Polyline
-              positions={linea}
-              pathOptions={{ color: "#2563eb", weight: 4, opacity: 0.85 }}
-            />
+            <Pane name="trip-route" style={{ zIndex: 450 }}>
+              <Polyline positions={linea} pathOptions={{ color: "#242422", weight: 9, opacity: 0.35 }} />
+              <Polyline positions={linea} pathOptions={{ color: "#f5b51b", weight: 5, opacity: 1, lineCap: "round", lineJoin: "round" }} />
+            </Pane>
           )}
         </MapContainer>
       </div>

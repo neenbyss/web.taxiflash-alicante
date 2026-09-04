@@ -67,7 +67,7 @@ export const resenasRouter = createTRPCRouter({
           tipo: "resena_recibida",
           titulo: "Nueva reseña recibida",
           cuerpo: `Recibiste ${input.puntuacion}★ por el viaje ${reserva.codigo}.`,
-          url: "/chofer/resenas",
+          url: "/driver/reviews",
         })
       }
       return resena

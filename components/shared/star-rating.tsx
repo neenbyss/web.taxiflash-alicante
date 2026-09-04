@@ -1,6 +1,6 @@
 "use client"
 
-import { RiStarFill, RiStarLine } from "@remixicon/react"
+import { RiStarFill, RiStarLine } from "@/components/icons"
 import { useState } from "react"
 
 import { cn } from "@/lib/utils"

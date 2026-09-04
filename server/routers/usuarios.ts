@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server"
+import { hashPassword } from "better-auth/crypto"
 import { z } from "zod"
 
 import { PERMISOS } from "@/lib/permisos"
@@ -9,7 +10,6 @@ import {
   crearUsuarioAdminSchema,
   filtrosUsuariosSchema,
 } from "@/lib/validations/usuario"
-import { auth } from "@/server/auth"
 import {
   createTRPCRouter,
   permissionProcedure,
@@ -61,12 +61,13 @@ export const usuariosRouter = createTRPCRouter({
     ),
 
   /** Choferes activos (para el diálogo de asignación manual). */
-  choferesActivos: permissionProcedure(PERMISOS.ASIGNAR_RESERVAS).query(({ ctx }) =>
-    ctx.db.user.findMany({
-      where: { role: "CHOFER", activo: true },
-      select: { id: true, name: true, telefono: true },
-      orderBy: { name: "asc" },
-    })
+  choferesActivos: permissionProcedure(PERMISOS.ASIGNAR_RESERVAS).query(
+    ({ ctx }) =>
+      ctx.db.user.findMany({
+        where: { role: "CHOFER", activo: true },
+        select: { id: true, name: true, telefono: true },
+        orderBy: { name: "asc" },
+      })
   ),
 
   // ------------------------------------------------------------
@@ -83,8 +84,18 @@ export const usuariosRouter = createTRPCRouter({
           ...(input.busqueda
             ? {
                 OR: [
-                  { name: { contains: input.busqueda, mode: "insensitive" as const } },
-                  { email: { contains: input.busqueda, mode: "insensitive" as const } },
+                  {
+                    name: {
+                      contains: input.busqueda,
+                      mode: "insensitive" as const,
+                    },
+                  },
+                  {
+                    email: {
+                      contains: input.busqueda,
+                      mode: "insensitive" as const,
+                    },
+                  },
                 ],
               }
             : {}),
@@ -125,24 +136,29 @@ export const usuariosRouter = createTRPCRouter({
           message: "Ya existe una cuenta con ese email.",
         })
       }
-      // Se crea vía better-auth para que el hash de contraseña sea compatible.
-      const creado = await auth.api.signUpEmail({
-        body: {
-          name: sanitizeText(input.name),
-          email: input.email.toLowerCase(),
-          password: input.password,
-        },
+      const password = await hashPassword(input.password)
+      return ctx.db.$transaction(async (tx) => {
+        const usuario = await tx.user.create({
+          data: {
+            name: sanitizeText(input.name),
+            email: input.email.toLowerCase(),
+            emailVerified: true,
+            role: input.role,
+            telefono: opcional(input.telefono),
+          },
+          select: { id: true, name: true, email: true, role: true },
+        })
+        await tx.account.create({
+          data: {
+            userId: usuario.id,
+            accountId: usuario.id,
+            providerId: "credential",
+            issuer: "local:credential",
+            password,
+          },
+        })
+        return usuario
       })
-      const usuario = await ctx.db.user.update({
-        where: { id: creado.user.id },
-        data: {
-          role: input.role,
-          telefono: opcional(input.telefono),
-          emailVerified: true,
-        },
-        select: { id: true, name: true, email: true, role: true },
-      })
-      return usuario
     }),
 
   actualizar: permissionProcedure(PERMISOS.GESTIONAR_USUARIOS)
@@ -154,7 +170,11 @@ export const usuariosRouter = createTRPCRouter({
           message: "No puedes desactivar tu propia cuenta.",
         })
       }
-      if (input.userId === ctx.session.user.id && input.role && input.role !== "ADMIN") {
+      if (
+        input.userId === ctx.session.user.id &&
+        input.role &&
+        input.role !== "ADMIN"
+      ) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "No puedes quitarte el rol de administrador a ti mismo.",
@@ -163,9 +183,13 @@ export const usuariosRouter = createTRPCRouter({
       const usuario = await ctx.db.user.update({
         where: { id: input.userId },
         data: {
-          ...(input.name !== undefined ? { name: sanitizeText(input.name) } : {}),
+          ...(input.name !== undefined
+            ? { name: sanitizeText(input.name) }
+            : {}),
           ...(input.role !== undefined ? { role: input.role } : {}),
-          ...(input.telefono !== undefined ? { telefono: opcional(input.telefono) } : {}),
+          ...(input.telefono !== undefined
+            ? { telefono: opcional(input.telefono) }
+            : {}),
           ...(input.activo !== undefined ? { activo: input.activo } : {}),
         },
         select: { id: true, activo: true },
@@ -196,7 +220,10 @@ export const usuariosRouter = createTRPCRouter({
         },
       })
       if (!usuario) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Usuario no encontrado." })
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Usuario no encontrado.",
+        })
       }
       return usuario
     }),

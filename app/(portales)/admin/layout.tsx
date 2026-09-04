@@ -11,8 +11,8 @@ export default async function AdminLayout({
   return (
     <DashboardShell
       portalId="admin"
-      rol={session.user.role as Role}
-      usuario={{ name: session.user.name, email: session.user.email }}
+      role={session.user.role as Role}
+      user={{ name: session.user.name, email: session.user.email }}
     >
       {children}
     </DashboardShell>

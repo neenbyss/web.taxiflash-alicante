@@ -6,7 +6,7 @@ import {
   RiRoadMapLine,
   RiStarLine,
   RiTimeLine,
-} from "@remixicon/react"
+} from "@/components/icons"
 import Link from "next/link"
 
 import { StarRating } from "@/components/shared/star-rating"
@@ -104,7 +104,7 @@ export function ResumenReportes() {
             Tienes <strong>{reportesAbiertos.data}</strong> reporte(s) abierto(s)
             sin revisar.
           </p>
-          <Button size="sm" variant="outline" render={<Link href="/admin/reportes" />}>
+          <Button size="sm" variant="outline" render={<Link href="/admin/reports" />}>
             Revisar
           </Button>
         </div>
@@ -168,7 +168,7 @@ export function ResumenReportes() {
           <CardDescription>Viajes atendidos y valoración.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="min-w-0 max-w-full overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

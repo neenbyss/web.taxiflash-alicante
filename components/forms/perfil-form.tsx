@@ -55,7 +55,7 @@ export function PerfilForm({ esCliente }: { esCliente: boolean }) {
   if (perfil.isLoading) return <Skeleton className="h-96 rounded-4xl" />
 
   return (
-    <Card className="max-w-xl">
+    <Card className="w-full max-w-3xl">
       <CardHeader>
         <CardTitle>Mi perfil</CardTitle>
         <CardDescription>{perfil.data?.email}</CardDescription>
@@ -65,7 +65,7 @@ export function PerfilForm({ esCliente }: { esCliente: boolean }) {
           onSubmit={form.handleSubmit((values) => actualizar.mutate(values))}
           noValidate
         >
-          <FieldGroup>
+          <FieldGroup className="sm:grid sm:grid-cols-2">
             <Field data-invalid={Boolean(errores.name)}>
               <FieldLabel htmlFor="perfil-name">Nombre</FieldLabel>
               <Input id="perfil-name" {...form.register("name")} />
@@ -78,7 +78,7 @@ export function PerfilForm({ esCliente }: { esCliente: boolean }) {
             </Field>
             {esCliente && (
               <>
-                <Field data-invalid={Boolean(errores.direccionFrecuente)}>
+                <Field data-invalid={Boolean(errores.direccionFrecuente)} className="sm:col-span-2">
                   <FieldLabel htmlFor="perfil-direccion">
                     Dirección frecuente
                   </FieldLabel>
@@ -100,7 +100,7 @@ export function PerfilForm({ esCliente }: { esCliente: boolean }) {
                   />
                   <FieldError errors={[errores.vehiculoPreferido]} />
                 </Field>
-                <Field data-invalid={Boolean(errores.notasPreferencias)}>
+                <Field data-invalid={Boolean(errores.notasPreferencias)} className="sm:col-span-2">
                   <FieldLabel htmlFor="perfil-notas">
                     Preferencias habituales
                   </FieldLabel>
@@ -117,7 +117,7 @@ export function PerfilForm({ esCliente }: { esCliente: boolean }) {
                 </Field>
               </>
             )}
-            <Button type="submit" disabled={actualizar.isPending}>
+            <Button type="submit" disabled={actualizar.isPending} className="h-11 sm:col-span-2 sm:ml-auto sm:min-w-44">
               {actualizar.isPending ? "Guardando…" : "Guardar cambios"}
             </Button>
           </FieldGroup>

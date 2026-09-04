@@ -1,4 +1,4 @@
-import { RiTaxiLine, type RemixiconComponentType } from "@remixicon/react"
+import { RiTaxiLine, type RemixiconComponentType } from "@/components/icons"
 import Link from "next/link"
 
 import { cn } from "@/lib/utils"

@@ -10,7 +10,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowDownSLine } from "@remixicon/react"
+import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowDownSLine } from "@/components/icons"
 
 function Calendar({
   className,

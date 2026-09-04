@@ -1,6 +1,6 @@
 "use client"
 
-import { RiCheckDoubleLine } from "@remixicon/react"
+import { RiCheckDoubleLine } from "@/components/icons"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -60,9 +60,9 @@ export function NotificacionesView() {
       </PageHeader>
 
       <Tabs value={filtro} onValueChange={(v) => setFiltro(v as typeof filtro)}>
-        <TabsList>
-          <TabsTrigger value="todas">Todas</TabsTrigger>
-          <TabsTrigger value="sin_leer">
+        <TabsList className="w-full sm:w-auto">
+          <TabsTrigger value="todas" className="flex-1 sm:flex-none">Todas</TabsTrigger>
+          <TabsTrigger value="sin_leer" className="flex-1 sm:flex-none">
             Sin leer{sinLeer > 0 ? ` (${sinLeer})` : ""}
           </TabsTrigger>
         </TabsList>

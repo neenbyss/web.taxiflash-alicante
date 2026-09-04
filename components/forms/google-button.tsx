@@ -1,6 +1,6 @@
 "use client"
 
-import { RiGoogleFill } from "@remixicon/react"
+import { RiGoogleFill } from "@/components/icons"
 import { useState } from "react"
 import { toast } from "sonner"
 

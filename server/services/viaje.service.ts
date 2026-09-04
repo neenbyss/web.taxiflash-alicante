@@ -39,7 +39,7 @@ export async function cancelarEsperasVencidas(
         tipo: "reserva_cancelada_espera",
         titulo: "Reserva cancelada por espera",
         cuerpo: `Tu reserva ${reserva.codigo} se canceló porque no confirmaste tu salida a tiempo.`,
-        url: `/cliente/reservas/${reserva.id}`,
+        url: `/customer/bookings/${reserva.id}`,
       })
     }
     if (reserva.choferId) {
@@ -48,7 +48,7 @@ export async function cancelarEsperasVencidas(
         tipo: "reserva_cancelada_espera",
         titulo: "Viaje cancelado por espera",
         cuerpo: `La reserva ${reserva.codigo} se canceló: el cliente no se presentó.`,
-        url: "/chofer",
+        url: "/driver",
       })
     }
   }

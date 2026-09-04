@@ -1,24 +1,23 @@
-import React from "react";
+import React from "react"
 
-import { Header } from "@/components/layout/header";
-import { Toaster } from "@/components/ui/sonner";
+import { Header } from "@/components/layout/header"
+import { Toaster } from "@/components/ui/sonner"
 
-import { ViewTransition } from "react";
-import { Footer } from "@/components/layout/footer";
-import { ReactLenis } from "lenis/react";
+import { Footer } from "@/components/layout/footer"
+import { MotionProvider } from "@/components/providers/motion-provider"
+import { SmoothScrollProvider } from "@/components/providers/smooth-scroll-provider"
 
 export default function Template({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ViewTransition>
-      <ReactLenis root>
+    <MotionProvider>
+      <SmoothScrollProvider>
         <Header />
         {children}
         <Footer />
         <Toaster />
-      </ReactLenis>
-    </ViewTransition>
-  );
+      </SmoothScrollProvider>
+    </MotionProvider>
+  )
 }
-

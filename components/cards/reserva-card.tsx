@@ -1,6 +1,6 @@
 "use client"
 
-import { RiArrowRightLine, RiMapPin2Line } from "@remixicon/react"
+import { RiArrowRightLine, RiMapPin2Line } from "@/components/icons"
 
 import { EstadoBadge } from "@/components/shared/estado-badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -30,8 +30,8 @@ type ReservaCardProps = {
 /** Card base de reserva, reutilizada por los tres portales. */
 export function ReservaCard({ reserva, contraparte, acciones }: ReservaCardProps) {
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-3">
+    <Card className="transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgb(30_29_26/10%)]">
+      <CardContent className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="font-mono text-sm font-medium">{reserva.codigo}</span>
@@ -44,13 +44,13 @@ export function ReservaCard({ reserva, contraparte, acciones }: ReservaCardProps
           </span>
         </div>
 
-        <div className="flex flex-col gap-1 text-sm">
-          <p className="flex items-start gap-1.5">
-            <RiMapPin2Line className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+        <div className="relative flex flex-col gap-3 rounded-2xl bg-muted/45 p-3 text-sm before:absolute before:top-7 before:bottom-7 before:left-[1.17rem] before:w-px before:bg-foreground/12">
+          <p className="relative flex items-start gap-2.5">
+            <span className="z-10 grid size-6 shrink-0 place-items-center rounded-lg bg-emerald-600 text-white"><RiMapPin2Line className="size-3.5" /></span>
             <span className="break-words">{reserva.origenDireccion}</span>
           </p>
-          <p className="flex items-start gap-1.5">
-            <RiArrowRightLine className="mt-0.5 size-4 shrink-0 text-red-600" />
+          <p className="relative flex items-start gap-2.5">
+            <span className="z-10 grid size-6 shrink-0 place-items-center rounded-lg bg-secondary text-secondary-foreground"><RiArrowRightLine className="size-3.5" /></span>
             <span className="break-words">{reserva.destinoDireccion}</span>
           </p>
         </div>
@@ -65,7 +65,7 @@ export function ReservaCard({ reserva, contraparte, acciones }: ReservaCardProps
             )}
             <span>Estimado: {formatearMoneda(reserva.tarifaEstimada)}</span>
           </div>
-          {acciones && <div className="flex items-center gap-2">{acciones}</div>}
+          {acciones && <div className="flex w-full items-center justify-end gap-2 sm:w-auto">{acciones}</div>}
         </div>
 
         {reserva.notas && (

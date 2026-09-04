@@ -6,40 +6,40 @@ import {
   RiHourglassFill,
   RiShieldFill,
   RiStarFill,
-} from "@remixicon/react"
+} from "@/components/icons"
 
 import Image from "next/image"
 
 export function Info() {
   return (
-    <section className="rounded-4xl bg-inner-background text-inner-foreground">
-      <div className="container-screen-2xl py-56">
-        <div className="mb-20 flex items-center justify-between">
+    <section className="rounded-3xl bg-inner-background text-inner-foreground sm:rounded-4xl">
+      <div className="container-screen-2xl py-3 sm:py-32 lg:py-56">
+        <div className="mb-6 md:mb-12 flex flex-col items-start gap-5 sm:mb-20 sm:flex-row sm:items-center sm:justify-between">
           <RevealText
             as="h2"
-            className="mb-12 font-heading text-3xl leading-snug sm:text-7xl"
+            className="mb-8 sm:mb-12 mt-8 sm:mt-0 font-heading text-3xl leading-snug sm:text-7xl"
             text={`Viaja con nosotros`}
           />
 
           <AnimatedContent delay={0.6} orientation="left">
-            <Button variant="inner">
+            <Button variant="inner" className="hidden lg:flex">
               Explorar estaciones
               <RiArrowRightLine />
             </Button>
           </AnimatedContent>
         </div>
 
-        <div className="grid grid-cols-[1fr_.7fr] gap-12">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_.7fr] lg:gap-12">
           <AnimatedContent
             delay={0.4}
             duration={1.6}
             initialScale={0.8}
             orientation="right"
             distance={200}
-            className="relative h-150 origin-bottom-right overflow-clip rounded-3xl"
+            className="relative min-h-105 origin-bottom-right overflow-clip rounded-3xl sm:min-h-130 lg:h-150"
           >
-            <div className="relative z-10 flex h-full items-end justify-end p-2 xl:p-8">
-              <h3 className="text-4xl font-medium text-balance">
+            <div className="relative z-10 flex h-full flex-col items-start justify-end gap-4 p-5 sm:flex-row sm:items-end sm:justify-between xl:p-8">
+              <h3 className="max-w-xl text-2xl font-medium text-balance sm:text-4xl">
                 {" "}
                 Una forma mejor de moverte por Alicante.{" "}
               </h3>
@@ -72,7 +72,7 @@ export function Info() {
           </AnimatedContent>
 
           <div className="py-4 flex flex-col">
-            <div className="grid grid-cols-2 gap-4 mb-12 px-6">
+            <div className="mb-8 grid grid-cols-1 gap-6 px-1 sm:grid-cols-2 sm:px-6 lg:mb-12">
               <AnimatedContent
                 delay={0.6}
                 duration={1.6}
@@ -117,7 +117,7 @@ export function Info() {
               initialScale={0.8}
               orientation="right"
               distance={200}
-              className="relative grow origin-bottom-right overflow-clip rounded-3xl"
+              className="relative min-h-80 grow origin-bottom-right overflow-clip rounded-3xl"
             >
               <Image
                 alt="BG"
@@ -129,6 +129,13 @@ export function Info() {
             </AnimatedContent>
           </div>
         </div>
+
+        <AnimatedContent delay={0.6} orientation="bottom">
+            <Button variant="inner" className="flex lg:hidden ">
+              Explorar estaciones
+              <RiArrowRightLine />
+            </Button>
+          </AnimatedContent>
       </div>
     </section>
   )

@@ -34,7 +34,7 @@ export function MisViajes({ soloActivas }: { soloActivas: boolean }) {
           acciones={
             <Button
               size="sm"
-              render={<Link href={`/chofer/viajes/${reserva.id}`} />}
+              render={<Link href={`/driver/trips/${reserva.id}`} />}
             >
               Ver viaje
             </Button>

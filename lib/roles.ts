@@ -1,7 +1,7 @@
 /** Ruta principal del portal de cada rol. */
 export const HOME_POR_ROL: Record<string, string> = {
-  CLIENTE: "/cliente",
-  CHOFER: "/chofer",
+  CLIENTE: "/customer",
+  CHOFER: "/driver",
   ADMIN: "/admin",
 }
 

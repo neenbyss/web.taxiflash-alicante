@@ -1,6 +1,6 @@
 "use client"
 
-import { RiShieldCheckLine } from "@remixicon/react"
+import { RiShieldCheckLine } from "@/components/icons"
 import Link from "next/link"
 import { useEffect, useSyncExternalStore } from "react"
 

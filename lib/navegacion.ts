@@ -1,13 +1,9 @@
-// Configuración de navegación de los portales, en un solo lugar.
-// La consumen el sidebar del dashboard y el breadcrumb; así los layouts no
-// duplican listas de enlaces.
-
 import {
   RiAlarmWarningLine,
   RiCarLine,
   RiDashboardLine,
   RiHistoryLine,
-  RiMapPin2Line,
+  RiNotification3Line,
   RiRoadMapLine,
   RiShieldUserLine,
   RiStarLine,
@@ -15,115 +11,88 @@ import {
   RiTeamLine,
   RiUser3Line,
   type RemixiconComponentType,
-} from "@remixicon/react"
+} from "@/components/icons"
 
 import type { Role } from "@/lib/generated/prisma/enums"
 
-export type NavItem = {
-  href: string
-  label: string
-  icono: RemixiconComponentType
-}
-
-export type PortalId = "cliente" | "chofer" | "admin"
-
-type PortalConfig = {
+export type NavItem = { href: string; label: string; icon: RemixiconComponentType }
+export type PortalId = "customer" | "driver" | "admin"
+export type PortalConfig = {
   id: PortalId
-  rol: Role
-  titulo: string
+  role: Role
+  title: string
   home: string
   nav: NavItem[]
 }
 
-export const PORTALES: Record<PortalId, PortalConfig> = {
-  cliente: {
-    id: "cliente",
-    rol: "CLIENTE",
-    titulo: "Clientes",
-    home: "/cliente",
+export const PORTALS: Record<PortalId, PortalConfig> = {
+  customer: {
+    id: "customer",
+    role: "CLIENTE",
+    title: "Clientes",
+    home: "/customer",
     nav: [
-      { href: "/cliente", label: "Inicio", icono: RiDashboardLine },
-      { href: "/cliente/reservar", label: "Reservar", icono: RiTaxiLine },
-      { href: "/cliente/reservas", label: "Mis reservas", icono: RiRoadMapLine },
-      { href: "/cliente/alquileres", label: "Alquileres", icono: RiCarLine },
-      { href: "/cliente/perfil", label: "Perfil", icono: RiUser3Line },
+      { href: "/customer", label: "Inicio", icon: RiDashboardLine },
+      { href: "/customer/book", label: "Reservar", icon: RiTaxiLine },
+      { href: "/customer/bookings", label: "Mis reservas", icon: RiRoadMapLine },
+      { href: "/customer/rentals", label: "Alquileres", icon: RiCarLine },
+      { href: "/customer/notifications", label: "Notificaciones", icon: RiNotification3Line },
+      { href: "/customer/profile", label: "Perfil", icon: RiUser3Line },
     ],
   },
-  chofer: {
-    id: "chofer",
-    rol: "CHOFER",
-    titulo: "Choferes",
-    home: "/chofer",
+  driver: {
+    id: "driver",
+    role: "CHOFER",
+    title: "Choferes",
+    home: "/driver",
     nav: [
-      { href: "/chofer", label: "Tablero", icono: RiDashboardLine },
-      { href: "/chofer/historial", label: "Historial", icono: RiHistoryLine },
-      { href: "/chofer/resenas", label: "Mis reseñas", icono: RiStarLine },
-      { href: "/chofer/perfil", label: "Perfil", icono: RiUser3Line },
+      { href: "/driver", label: "Tablero", icon: RiDashboardLine },
+      { href: "/driver/history", label: "Historial", icon: RiHistoryLine },
+      { href: "/driver/reviews", label: "Mis reseñas", icon: RiStarLine },
+      { href: "/driver/notifications", label: "Notificaciones", icon: RiNotification3Line },
+      { href: "/driver/profile", label: "Perfil", icon: RiUser3Line },
     ],
   },
   admin: {
     id: "admin",
-    rol: "ADMIN",
-    titulo: "Administración",
+    role: "ADMIN",
+    title: "Administración",
     home: "/admin",
     nav: [
-      { href: "/admin", label: "Resumen", icono: RiDashboardLine },
-      { href: "/admin/reservas", label: "Reservas", icono: RiRoadMapLine },
-      { href: "/admin/alquileres", label: "Alquileres", icono: RiCarLine },
-      { href: "/admin/usuarios", label: "Usuarios", icono: RiTeamLine },
-      { href: "/admin/permisos", label: "Permisos", icono: RiShieldUserLine },
-      { href: "/admin/resenas", label: "Reseñas", icono: RiStarLine },
-      { href: "/admin/reportes", label: "Reportes", icono: RiAlarmWarningLine },
+      { href: "/admin", label: "Resumen", icon: RiDashboardLine },
+      { href: "/admin/bookings", label: "Reservas", icon: RiRoadMapLine },
+      { href: "/admin/rentals", label: "Alquileres", icon: RiCarLine },
+      { href: "/admin/users", label: "Usuarios", icon: RiTeamLine },
+      { href: "/admin/permissions", label: "Permisos", icon: RiShieldUserLine },
+      { href: "/admin/reviews", label: "Reseñas", icon: RiStarLine },
+      { href: "/admin/reports", label: "Reportes", icon: RiAlarmWarningLine },
+      { href: "/admin/notifications", label: "Notificaciones", icon: RiNotification3Line },
     ],
   },
 }
 
-/** Portales a los que un rol puede cambiar (el admin puede a todos). */
-export function portalesAccesibles(rol: Role): PortalConfig[] {
-  if (rol === "ADMIN") return [PORTALES.admin, PORTALES.chofer, PORTALES.cliente]
-  return [PORTALES[rol.toLowerCase() as PortalId]]
+export function accessiblePortals(role: Role): PortalConfig[] {
+  if (role === "ADMIN") return Object.values(PORTALS)
+  return [role === "CHOFER" ? PORTALS.driver : PORTALS.customer]
 }
 
-// Etiquetas extra para segmentos que no están en el nav (breadcrumb).
-const ETIQUETAS_EXTRA: Record<string, string> = {
-  viajes: "Viaje",
-  nueva: "Nueva solicitud",
+const EXTRA_LABELS: Record<string, string> = {
+  trips: "Viaje",
+  new: "Nueva solicitud",
+  notifications: "Notificaciones",
 }
 
-/**
- * Migas de pan funcionales derivadas del pathname: cada segmento acumula su
- * href y resuelve la etiqueta desde el nav del portal (o extras). Los ids
- * dinámicos (cuid) se muestran como "Detalle".
- */
-export function migasDeRuta(
-  portalId: PortalId,
-  pathname: string
-): { href: string; label: string }[] {
-  const portal = PORTALES[portalId]
-  const porHref = new Map(portal.nav.map((item) => [item.href, item.label]))
-
-  const segmentos = pathname.split("/").filter(Boolean)
-  const migas: { href: string; label: string }[] = []
-  let acumulado = ""
-  for (const segmento of segmentos) {
-    acumulado += `/${segmento}`
-    const label =
-      porHref.get(acumulado) ??
-      ETIQUETAS_EXTRA[segmento] ??
-      // cuid u otro id dinámico
-      (/^[a-z0-9]{20,}$/i.test(segmento)
-        ? "Detalle"
-        : segmento.charAt(0).toUpperCase() + segmento.slice(1))
-    migas.push({ href: acumulado, label })
+export function breadcrumbsFor(portalId: PortalId, pathname: string) {
+  const portal = PORTALS[portalId]
+  const byHref = new Map(portal.nav.map((item) => [item.href, item.label]))
+  const crumbs: { href: string; label: string }[] = []
+  let href = ""
+  for (const segment of pathname.split("/").filter(Boolean)) {
+    href += `/${segment}`
+    const label = byHref.get(href) ?? EXTRA_LABELS[segment] ??
+      (/^[a-z0-9]{20,}$/i.test(segment) ? "Detalle" : segment[0].toUpperCase() + segment.slice(1))
+    crumbs.push({ href, label })
   }
-  // El primer segmento es el portal: usa su título.
-  if (migas.length > 0) migas[0] = { href: portal.home, label: portal.titulo }
-  return migas
-}
-
-/** Icono del portal para el logo del sidebar. */
-export const ICONO_PORTAL: Record<PortalId, RemixiconComponentType> = {
-  cliente: RiMapPin2Line,
-  chofer: RiTaxiLine,
-  admin: RiShieldUserLine,
+  if (crumbs.length) crumbs[0] = { href: portal.home, label: portal.title }
+  return crumbs
 }

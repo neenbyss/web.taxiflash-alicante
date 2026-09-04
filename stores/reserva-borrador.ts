@@ -14,6 +14,7 @@ type ReservaBorradorState = {
   paradas: (PuntoRuta | null)[]
   puntoActivo: PuntoActivo
   setPunto: (destino: PuntoActivo, punto: PuntoRuta) => void
+  actualizarPunto: (destino: PuntoActivo, punto: PuntoRuta) => void
   setPuntoActivo: (punto: PuntoActivo) => void
   agregarParada: () => void
   quitarParada: (indice: number) => void
@@ -36,6 +37,14 @@ export const useReservaBorrador = create<ReservaBorradorState>((set) => ({
         // Tras fijar origen, el siguiente click apunta al destino.
         return { origen: punto, puntoActivo: "destino" as const }
       }
+      if (destino === "destino") return { destino: punto }
+      const paradas = [...state.paradas]
+      paradas[destino.parada] = punto
+      return { paradas }
+    }),
+  actualizarPunto: (destino, punto) =>
+    set((state) => {
+      if (destino === "origen") return { origen: punto }
       if (destino === "destino") return { destino: punto }
       const paradas = [...state.paradas]
       paradas[destino.parada] = punto

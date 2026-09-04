@@ -16,8 +16,13 @@ import { NextResponse, type NextRequest } from "next/server"
 // La cookie puede falsificarse en teoría, por eso las capas 2 y 3 son las
 // autoritativas; el proxy solo evita renderizar de más y mejora la UX.
 
-const RUTAS_PROTEGIDAS = ["/cliente", "/chofer", "/admin"]
-const RUTAS_SOLO_ANONIMOS = ["/login", "/register"]
+const RUTAS_PROTEGIDAS = ["/customer", "/driver", "/admin"]
+const RUTAS_SOLO_ANONIMOS = [
+  "/login",
+  "/register",
+  "/complete-profile",
+  "/forgot-password",
+]
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -43,10 +48,12 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/cliente/:path*",
-    "/chofer/:path*",
+    "/customer/:path*",
+    "/driver/:path*",
     "/admin/:path*",
     "/login",
     "/register",
+    "/complete-profile",
+    "/forgot-password",
   ],
 }

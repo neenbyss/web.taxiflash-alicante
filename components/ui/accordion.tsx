@@ -1,7 +1,7 @@
 import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion"
 
 import { cn } from "@/lib/utils"
-import { RiArrowDownSLine, RiArrowUpSLine } from "@remixicon/react"
+import { RiArrowDownSLine, RiArrowUpSLine } from "@/components/icons"
 
 function Accordion({ className, ...props }: AccordionPrimitive.Root.Props) {
   return (

@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { RiMoonLine, RiSunLine } from "@remixicon/react";
+import { RiMoonLine, RiSunLine } from "@/components/icons";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 

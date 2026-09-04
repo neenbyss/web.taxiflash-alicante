@@ -9,6 +9,6 @@ export const MapaSelector = dynamic(
   () => import("@/components/mapa/route-map"),
   {
     ssr: false,
-    loading: () => <Skeleton className="h-80 w-full rounded-2xl sm:h-96" />,
+    loading: () => <Skeleton className="h-full min-h-0 w-full rounded-2xl lg:h-[min(72dvh,46rem)] lg:min-h-128" />,
   }
 )

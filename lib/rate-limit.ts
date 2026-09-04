@@ -46,7 +46,13 @@ export function checkRateLimit(opts: {
 }
 
 export function getClientIp(headers: Headers): string {
-  const forwarded = headers.get("x-forwarded-for")
-  if (forwarded) return forwarded.split(",")[0].trim()
-  return headers.get("x-real-ip") ?? "unknown"
+  const configured = process.env.TRUSTED_PROXY_HEADER?.trim().toLowerCase()
+  const allowedHeaders = new Set(["x-real-ip", "cf-connecting-ip"])
+
+  // No se confía en X-Forwarded-For directamente: un cliente puede falsificar
+  // su primer valor si el origen queda accesible sin pasar por el proxy.
+  if (!configured || !allowedHeaders.has(configured)) return "unknown"
+
+  const value = headers.get(configured)?.trim()
+  return value && value.length <= 64 ? value : "unknown"
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { RiCloseLine, RiMapPin2Fill } from "@remixicon/react"
+import { RiCloseLine, RiMapPin2Fill } from "@/components/icons"
 import { useEffect, useId, useRef, useState } from "react"
 
 import { buscarDireccion, type ResultadoGeocoding } from "@/lib/geocoding"

@@ -31,7 +31,7 @@ export function Hero({
           priority
           className="absolute top-1/2 left-1/2 size-full -translate-x-1/2 -translate-y-1/2 scale-110 object-cover"
         />
-        <div className="absolute inset-0 bg-linear-to-t from-neutral-900/95 via-neutral-900/80 to-neutral-900/50" />
+          <div className="absolute inset-0 bg-linear-to-r from-neutral-900 to-neutral-900/85" />
       </div>
     </section>
   )

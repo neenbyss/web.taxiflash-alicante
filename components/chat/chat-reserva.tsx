@@ -1,6 +1,6 @@
 "use client"
 
-import { RiSendPlaneFill } from "@remixicon/react"
+import { RiSendPlaneFill } from "@/components/icons"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 

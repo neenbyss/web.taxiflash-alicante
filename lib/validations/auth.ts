@@ -9,6 +9,14 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>
 
+export const registroEmailSchema = z.object({
+  email: z.email("Email inválido").max(254),
+})
+
+export const registroCodigoSchema = z.object({
+  code: z.string().regex(/^\d{6}$/, "Introduce los 6 dígitos"),
+})
+
 export const registroSchema = z
   .object({
     name: z.string().min(2, "Indica tu nombre").max(80),
@@ -34,10 +42,7 @@ export type RegistroInput = z.infer<typeof registroSchema>
 export const perfilSchema = z.object({
   name: z.string().min(2, "Indica tu nombre").max(80),
   telefono: telefonoSchema.optional().or(z.literal("")),
-  direccionFrecuente: z
-    .string()
-    .max(200, "Máximo 200 caracteres")
-    .optional(),
+  direccionFrecuente: z.string().max(200, "Máximo 200 caracteres").optional(),
   vehiculoPreferido: z.string().max(60).optional(),
   notasPreferencias: z.string().max(300).optional(),
 })

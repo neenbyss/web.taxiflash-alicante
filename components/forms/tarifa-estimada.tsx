@@ -1,6 +1,6 @@
 "use client"
 
-import { RiInformationLine } from "@remixicon/react"
+import { RiInformationLine } from "@/components/icons"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatearKm, formatearMoneda } from "@/lib/formato"
@@ -29,18 +29,18 @@ export function TarifaEstimada() {
   if (!completa) return null
 
   return (
-    <div className="rounded-2xl border bg-muted/40 px-4 py-3 text-sm">
+    <div className="rounded-3xl bg-primary/18 px-4 py-4 text-sm shadow-sm sm:px-6">
       {estimacion.isLoading ? (
         <Skeleton className="h-5 w-48" />
       ) : estimacion.data ? (
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <span>
-            Distancia aproximada:{" "}
-            <strong>{formatearKm(estimacion.data.distanciaKm)}</strong>
+        <div className="grid grid-cols-2 gap-4">
+          <span className="flex flex-col gap-1 text-xs text-muted-foreground">
+            Distancia estimada
+            <strong className="text-lg tabular-nums">{formatearKm(estimacion.data.distanciaKm)}</strong>
           </span>
-          <span>
-            Tarifa estimada:{" "}
-            <strong className="text-base">
+          <span className="flex flex-col gap-1 text-xs text-muted-foreground">
+            Tarifa estimada
+            <strong className="font-heading text-xl tabular-nums">
               {formatearMoneda(estimacion.data.tarifaEstimada)}
             </strong>
           </span>
@@ -50,7 +50,7 @@ export function TarifaEstimada() {
           No se pudo calcular la estimación.
         </span>
       )}
-      <p className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
+      <p className="mt-3 flex items-start gap-1.5 text-xs text-muted-foreground">
         <RiInformationLine className="mt-0.5 size-3.5 shrink-0" />
         Importe aproximado según la distancia de la ruta. El cobro real se hace
         por taxímetro al finalizar el viaje.

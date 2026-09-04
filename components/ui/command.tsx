@@ -15,7 +15,7 @@ import {
   InputGroup,
   InputGroupAddon,
 } from "@/components/ui/input-group"
-import { RiSearchLine, RiCheckLine } from "@remixicon/react"
+import { RiSearchLine, RiCheckLine } from "@/components/icons"
 
 function Command({
   className,

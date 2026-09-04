@@ -43,7 +43,7 @@ export default function UbicacionesMap({
   center,
 }: UbicacionesMapProps) {
   return (
-    <MapContainer center={[center[1], center[0]]} zoom={12} className="size-full min-h-96">
+    <MapContainer center={[center[1], center[0]]} zoom={12} className="isolate z-0 size-full min-h-96">
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"

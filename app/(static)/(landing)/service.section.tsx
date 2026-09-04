@@ -6,7 +6,7 @@ import { HailTaxiIcon } from "@/components/icons/hail-taxi";
 import { TaxiIcon } from "@/components/icons/taxi";
 import { TaxiAirportIcon } from "@/components/icons/taxi-airport";
 import { Button } from "@/components/ui/button";
-import { RiArrowRightLine } from "@remixicon/react";
+import { RiArrowRightLine } from "@/components/icons";
 
 const services = [
   {
@@ -50,7 +50,7 @@ export function Services() {
         />
         <AnimatedContent delay={1.5} orientation="left">
           <Button size="lg" className="hidden sm:flex" variant="secondary">
-            Otros Services
+            Otros Servicios
             <RiArrowRightLine />
           </Button>
         </AnimatedContent>
@@ -62,11 +62,11 @@ export function Services() {
             <AnimatedContent delay={0.6 + i * 0.02} duration={1.6} initialScale={.8} key={i} orientation="right" distance={200} className="relative rounded-3xl overflow-clip origin-bottom-right">
               <div className="relative z-10 p-2 xl:p-4 flex flex-col h-full">
                 <div className="h-50 lg:h-100" />
-                <div className="p-4 bg-card/90 text-card-foreground rounded-xl backdrop-blur-sm grow">
-                  <h3 className="flex items-center gap-2 text-xl capitalize font-medium">
-                    <div className="flex flex-col items-center justify-center size-10 bg-primary rounded-full">
+                <div className="p-2 sm:p-4 bg-card/90 text-card-foreground rounded-xl backdrop-blur-sm grow">
+                  <h3 className="flex items-center gap-2 text-lg sm:text-xl capitalize font-medium">
+                    <div className="flex flex-col items-center justify-center size-7 sm:size-10 bg-primary rounded-full">
                       {" "}
-                      <Icon className="size-5 text-primary-foreground" />{" "}
+                      <Icon className="size-4 sm:size-5 text-primary-foreground" />{" "}
                     </div>
                     {title}
                   </h3>
@@ -85,8 +85,8 @@ export function Services() {
       </div>
 
       <AnimatedContent delay={0.2} orientation="bottom" className="sm:hidden">
-        <Button className="w-full" variant="outline">
-          Otros Services
+        <Button className="w-full" variant="secondary">
+          Otros Servicios
           <RiArrowRightLine />
         </Button>
       </AnimatedContent>

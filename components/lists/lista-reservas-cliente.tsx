@@ -25,13 +25,13 @@ export function ListaReservasCliente({ soloActivas }: { soloActivas: boolean }) 
 
   if (!reservas.data?.length) {
     return (
-      <div className="rounded-2xl border border-dashed px-6 py-10 text-center">
+      <div className="rounded-3xl bg-card px-6 py-14 text-center shadow-sm">
         <p className="text-sm text-muted-foreground">
           {soloActivas
             ? "No tienes reservas activas ahora mismo."
             : "Todavía no has hecho ninguna reserva."}
         </p>
-        <Button className="mt-4" render={<Link href="/cliente/reservar" />}>
+        <Button className="mt-4" render={<Link href="/customer/book" />}>
           Reservar un taxi
         </Button>
       </div>
@@ -51,7 +51,7 @@ export function ListaReservasCliente({ soloActivas }: { soloActivas: boolean }) 
             <Button
               variant="outline"
               size="sm"
-              render={<Link href={`/cliente/reservas/${reserva.id}`} />}
+              render={<Link href={`/customer/bookings/${reserva.id}`} />}
             >
               Ver detalle
             </Button>

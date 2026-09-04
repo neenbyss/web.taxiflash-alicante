@@ -77,7 +77,7 @@ export function TablaReportes() {
               <>
                 {" · "}
                 <Link
-                  href={`/admin/reservas`}
+                  href={`/admin/bookings`}
                   className="underline underline-offset-4"
                 >
                   reserva {reporte.reserva.codigo}

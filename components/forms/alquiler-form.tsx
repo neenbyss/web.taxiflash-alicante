@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -38,7 +38,7 @@ export function AlquilerForm() {
       notas: "",
     },
   })
-  const modalidad = form.watch("modalidad")
+  const modalidad = useWatch({ control: form.control, name: "modalidad" })
   const errores = form.formState.errors
 
   const crear = trpc.alquiler.crear.useMutation({
@@ -47,7 +47,7 @@ export function AlquilerForm() {
         `Solicitud ${data.codigo} registrada. Te confirmaremos el precio a la brevedad.`
       )
       form.reset()
-      router.push("/cliente/alquileres")
+      router.push("/customer/rentals")
     },
     onError: (error) => toast.error(error.message),
   })

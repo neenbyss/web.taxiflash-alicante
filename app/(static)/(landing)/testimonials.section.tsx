@@ -11,8 +11,8 @@ import {
   CarouselNext,
   CarouselNavigationDots,
 } from "@/components/ui/carousel"
-import { RiDoubleQuotesL } from "@remixicon/react"
-import { motion } from "motion/react"
+import { RiDoubleQuotesL } from "@/components/icons"
+import Image from "next/image"
 
 const testimonials = [
   {
@@ -58,7 +58,7 @@ export function Testimonials() {
       <div className="relative z-10 container-screen-2xl">
         <div className="h-50 sm:h-120 xl:h-160" />
         <Carousel>
-          <div className="flex flex-col justify-end py-30 md:gap-20 2xl:grid 2xl:grid-cols-[0.4fr_1fr]">
+          <div className="flex flex-col justify-end py-4 sm:py-30 md:gap-20 2xl:grid 2xl:grid-cols-[0.4fr_1fr]">
             <div className="flex flex-col justify-end px-6 2xl:px-0">
               <RevealText
                 as="h2"
@@ -71,8 +71,8 @@ export function Testimonials() {
                 <CarouselNavigationDots />
 
                 <div className="flex items-center gap-2 [&_svg]:size-8!">
-                  <CarouselPrevious className="static size-12 translate-y-0 rounded-lg border-none bg-primary hover:bg-primary" />
-                  <CarouselNext className="static size-12 translate-y-0 rounded-lg border-none bg-primary hover:bg-primary" />
+                  <CarouselPrevious className="static size-8 sm:size-12 translate-y-0 rounded-lg border-none bg-primary hover:bg-primary" />
+                  <CarouselNext className="static size-8 sm:size-12 translate-y-0 rounded-lg border-none bg-primary hover:bg-primary" />
                 </div>
                 
               </div>
@@ -95,11 +95,11 @@ export function Testimonials() {
                     <div className="p-1">
                       <Card>
                         <CardContent>
-                          <RiDoubleQuotesL className="size-20 text-primary/80" />
+                          <RiDoubleQuotesL className="size-14 sm:size-20 text-primary/80" />
 
-                          <p> {message} </p>
+                          <p className="text-sm sm:text-base"> {message} </p>
                           <div className="mt-6 flex flex-col">
-                            <span className="text-xl font-medium text-foreground">
+                            <span className="text-lg sm:text-xl font-medium text-foreground">
                               {name}
                             </span>
                             <div>
@@ -117,29 +117,18 @@ export function Testimonials() {
         </Carousel>
       </div>
 
-      <motion.div
-        initial={{ clipPath: "inset(50% 50% 50% 50% round 2rem)" }}
-        whileInView={{ clipPath: "inset(0% 0% 0% 0% round 2rem)" }}
-        transition={{
-          duration: 2.5,
-          ease: [0.26, 0.66, 0, 0.98],
-        }}
-        viewport={{ once: true }}
-        className="pointer-events-none absolute inset-0 overflow-clip rounded-4xl"
-      >
-        <motion.img
+      <div className="pointer-events-none absolute inset-0 overflow-clip rounded-4xl">
+        <Image
           src="/images/testimonial_bg.png"
           alt="Alicante_bg"
+          width={1200}
+          height={1200}
           className="pointer-events-none absolute top-1/2 left-1/2 size-full -translate-x-1/2 -translate-y-1/2 scale-110 object-cover select-none"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 1.2 }}
-          viewport={{ once: true, margin: "-20%" }}
         />
 
         <div className="absolute inset-0 bg-linear-to-r from-[#161512]/90 to-[#161512]/90" />
         <div className="absolute inset-0 backdrop-blur-sm mask-[linear-gradient(to_top,rgba(0,0,0,1),rgba(0,0,0,0))]" />
-      </motion.div>
+      </div>
     </section>
   )
 }

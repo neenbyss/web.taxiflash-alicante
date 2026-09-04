@@ -1,4 +1,3 @@
-import { RiArrowRightLine } from "@remixicon/react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -22,10 +21,10 @@ const LEGAL = [
 export function Footer() {
   return (
     <>
-      <section className="relative z-10 container-screen-2xl -mb-40">
-        <div className="relative gap-6 overflow-hidden rounded-4xl px-12 py-18 text-primary-foreground sm:p-12">
-          <div className="relative z-20 flex flex-col items-start justify-between sm:flex-row sm:items-end">
-            <h2 className="font-heading text-3xl leading-tight sm:text-6xl">
+      <section className="relative z-10 container-screen-2xl -mb-32 sm:-mb-40">
+        <div className="relative gap-6 overflow-hidden rounded-3xl px-3 sm:px-5 py-3 sm:py-10 text-primary-foreground sm:rounded-4xl sm:p-12">
+          <div className="relative z-20 flex flex-col justify-between gap-8 md:flex-row md:items-end">
+            <h2 className="font-heading text-3xl sm:text-5xl md:text-4xl leading-tight lg:text-6xl">
               ¿Listo para tu
               <br />
               siguiente viaje?
@@ -33,13 +32,10 @@ export function Footer() {
             <Button
               variant="secondary"
               size="lg"
-              className="gap-5 pr-2 pl-5 text-base"
+              className="text-sm sm:text-base w-auto"
               render={<Link href="/" />}
             >
               Reserva Ahora
-              <span className="flex size-10 flex-col items-center justify-center rounded-sm bg-secondary-foreground text-foreground">
-                <RiArrowRightLine aria-hidden />
-              </span>
             </Button>
           </div>
 
@@ -48,9 +44,9 @@ export function Footer() {
         </div>
       </section>
 
-      <footer className="lg:p-2">
+      <footer className="p-1 lg:p-2">
         <div className="rounded-4xl bg-[#161512] text-secondary-foreground">
-          <div className="container-screen-2xl pt-54 pb-8">
+          <div className="container-screen-2xl pt-46 pb-8 sm:pt-54">
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               <div className="lg:col-span-2">
                 <Logo href="/" size="lg" className="text-secondary-foreground" />
@@ -58,7 +54,7 @@ export function Footer() {
                   Reservas de taxi en Alicante y alrededores, desde la web. Taxi
                   inmediato, programado, al aeropuerto ALC y entre ciudades.
                 </p>
-                <div className="mt-12 flex gap-18">
+                <div className="mt-10 flex flex-col gap-6 sm:flex-row sm:gap-18">
                   <div>
                     <p className="text-xl font-medium">Teléfono</p>
                     <a
@@ -115,7 +111,7 @@ export function Footer() {
               </nav>
             </div>
 
-            <div className="mt-12 pt-18 pb-4 text-center text-secondary-foreground/50">
+            <div className="mt-12 px-2 pt-12 pb-4 text-center text-sm text-secondary-foreground/50 sm:pt-18">
               © {new Date().getFullYear()} TaxiFlash — Taxi Alicante. Todos los
               derechos reservados.
             </div>

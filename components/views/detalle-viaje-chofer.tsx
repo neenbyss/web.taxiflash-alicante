@@ -1,6 +1,6 @@
 "use client"
 
-import { RiPhoneLine } from "@remixicon/react"
+import { RiPhoneLine } from "@/components/icons"
 import { toast } from "sonner"
 
 import { ChatReserva } from "@/components/chat/chat-reserva"

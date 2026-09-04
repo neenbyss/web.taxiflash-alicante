@@ -27,7 +27,7 @@ import {
   notificarPorRol,
 } from "@/server/services/notificaciones.service"
 import { estimarTarifa } from "@/server/services/tarifa.service"
-import { obtenerRutaGeometria } from "@/server/services/ruta.service"
+import { obtenerRutaGeometria, obtenerRutaOptimizada } from "@/server/services/ruta.service"
 import { cancelarEsperasVencidas } from "@/server/services/viaje.service"
 import { ESPERA_MINUTOS } from "@/lib/viaje"
 import {
@@ -43,21 +43,79 @@ export const reservasRouter = createTRPCRouter({
     .input(estimarTarifaSchema)
     .query(({ input }) => estimarTarifa(input.puntos)),
 
+  /** Vista previa por calles, optimizando el orden de paradas intermedias. */
+  previsualizarRuta: publicProcedure
+    .use(withRateLimit("reservas.ruta-preview", 30, 60_000))
+    .input(estimarTarifaSchema)
+    .query(({ input }) => obtenerRutaOptimizada(input.puntos)),
+
   /**
    * Crear reserva. Requiere sesión: el contacto se toma del perfil del
    * usuario (no se pide en el formulario). La tarifa se calcula SIEMPRE en el
    * servidor a partir de los puntos.
    */
   crear: protectedProcedure
-    .use(withRateLimit("reservas.crear", 5, 60_000))
+    .use(withRateLimit("reservas.crear", 3, 10 * 60_000))
     .input(crearReservaSchema)
     .mutation(async ({ ctx, input }) => {
-      const puntos = [input.origen, ...input.paradas, input.destino]
+      const user = ctx.session.user
+      const now = new Date()
+      const today = new Date(now)
+      today.setHours(0, 0, 0, 0)
+      const duplicateWindow = new Date(now.getTime() - 15 * 60_000)
+      const coordinateTolerance = 0.0005
+
+      const [activeReservations, reservationsToday, recentDuplicate] = await Promise.all([
+        ctx.db.reserva.count({
+          where: {
+            clienteId: user.id,
+            estado: { in: ["PENDIENTE", "ACEPTADA", "EN_CURSO"] },
+          },
+        }),
+        ctx.db.reserva.count({
+          where: { clienteId: user.id, createdAt: { gte: today } },
+        }),
+        ctx.db.reserva.findFirst({
+          where: {
+            clienteId: user.id,
+            estado: { in: ["PENDIENTE", "ACEPTADA", "EN_CURSO"] },
+            createdAt: { gte: duplicateWindow },
+            origenLat: { gte: input.origen.lat - coordinateTolerance, lte: input.origen.lat + coordinateTolerance },
+            origenLng: { gte: input.origen.lng - coordinateTolerance, lte: input.origen.lng + coordinateTolerance },
+            destinoLat: { gte: input.destino.lat - coordinateTolerance, lte: input.destino.lat + coordinateTolerance },
+            destinoLng: { gte: input.destino.lng - coordinateTolerance, lte: input.destino.lng + coordinateTolerance },
+          },
+          select: { id: true },
+        }),
+      ])
+
+      if (recentDuplicate) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Ya tienes una reserva reciente con el mismo recorrido.",
+        })
+      }
+      if (activeReservations >= 5) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Ya tienes demasiadas reservas activas. Completa o cancela una antes de crear otra.",
+        })
+      }
+      if (reservationsToday >= 12) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Alcanzaste el límite diario de reservas.",
+        })
+      }
+
+      const puntosEntrada = [input.origen, ...input.paradas, input.destino]
+      const rutaOptimizada = await obtenerRutaOptimizada(puntosEntrada)
+      const puntos = rutaOptimizada.ordenPuntos.map((indice) => puntosEntrada[indice])
+      const paradasOptimizadas = puntos.slice(1, -1)
       const { distanciaKm, tarifaEstimada } = await estimarTarifa(
         puntos.map((p) => ({ lat: p.lat, lng: p.lng }))
       )
 
-      const user = ctx.session.user
       const reserva = await ctx.db.reserva.create({
         data: {
           codigo: generarCodigo("R"),
@@ -74,7 +132,7 @@ export const reservasRouter = createTRPCRouter({
           destinoDireccion: sanitizeText(input.destino.direccion),
           destinoLat: input.destino.lat,
           destinoLng: input.destino.lng,
-          paradas: input.paradas.map((p) => ({
+          paradas: paradasOptimizadas.map((p) => ({
             direccion: sanitizeText(p.direccion),
             lat: p.lat,
             lng: p.lng,
@@ -90,20 +148,20 @@ export const reservasRouter = createTRPCRouter({
         tipo: "reserva_nueva",
         titulo: "Nueva reserva pendiente",
         cuerpo: resumen,
-        url: "/chofer",
+        url: "/driver",
       })
       await notificarPorRol("ADMIN", {
         tipo: "reserva_nueva",
         titulo: "Nueva reserva pendiente",
         cuerpo: resumen,
-        url: "/admin/reservas",
+        url: "/admin/bookings",
       })
       await notificar({
         userId: user.id,
         tipo: "reserva_creada",
         titulo: "Reserva registrada",
         cuerpo: `Tu reserva ${reserva.codigo} quedó pendiente de aceptación.`,
-        url: `/cliente/reservas/${reserva.id}`,
+        url: `/customer/bookings/${reserva.id}`,
       })
 
       return { id: reserva.id, codigo: reserva.codigo }
@@ -253,7 +311,7 @@ export const reservasRouter = createTRPCRouter({
           tipo: "reserva_cancelada",
           titulo: "Reserva cancelada",
           cuerpo: `El cliente canceló la reserva ${reserva.codigo}.`,
-          url: "/chofer",
+          url: "/driver",
         })
       }
       return actualizada
@@ -309,7 +367,7 @@ export const reservasRouter = createTRPCRouter({
           tipo: "reserva_aceptada",
           titulo: "Reserva confirmada",
           cuerpo,
-          url: `/cliente/reservas/${reserva.id}`,
+          url: `/customer/bookings/${reserva.id}`,
           emailDestino: reserva.emailContacto,
         })
       } else if (reserva.emailContacto) {
@@ -348,7 +406,7 @@ export const reservasRouter = createTRPCRouter({
           tipo: "reserva_rechazada",
           titulo: "Reserva rechazada",
           cuerpo,
-          url: `/cliente/reservas/${reserva.id}`,
+          url: `/customer/bookings/${reserva.id}`,
           emailDestino: reserva.emailContacto,
         })
       } else if (reserva.emailContacto) {
@@ -413,7 +471,7 @@ export const reservasRouter = createTRPCRouter({
           tipo: "chofer_en_camino",
           titulo: "Tu chofer va en camino",
           cuerpo: `El chofer se dirige al punto de recogida de la reserva ${reserva.codigo}.`,
-          url: `/cliente/reservas/${reserva.id}`,
+          url: `/customer/bookings/${reserva.id}`,
         })
       }
       return { ok: true }
@@ -445,7 +503,7 @@ export const reservasRouter = createTRPCRouter({
           tipo: "chofer_llego",
           titulo: "¡Tu chofer llegó!",
           cuerpo: `El chofer te espera en el punto de recogida (${reserva.codigo}). Confirma tu salida; tienes ${ESPERA_MINUTOS} minutos.`,
-          url: `/cliente/reservas/${reserva.id}`,
+          url: `/customer/bookings/${reserva.id}`,
           emailDestino: reserva.emailContacto,
         })
       }
@@ -481,7 +539,7 @@ export const reservasRouter = createTRPCRouter({
           tipo: "cliente_sale",
           titulo: "El cliente va saliendo",
           cuerpo: `El cliente de la reserva ${reserva.codigo} confirmó que va saliendo.`,
-          url: "/chofer",
+          url: "/driver",
         })
       }
       return { ok: true }
@@ -573,7 +631,7 @@ export const reservasRouter = createTRPCRouter({
           cuerpo: esFin
             ? `Tu viaje ${reserva.codigo} finalizó. ¡Puedes dejar una reseña!`
             : `Tu viaje ${reserva.codigo} está en curso.`,
-          url: `/cliente/reservas/${reserva.id}`,
+          url: `/customer/bookings/${reserva.id}`,
         })
       }
       return { ok: true }
@@ -663,7 +721,7 @@ export const reservasRouter = createTRPCRouter({
         tipo: "reserva_asignada",
         titulo: "Reserva asignada",
         cuerpo: `Se te asignó la reserva ${reserva.codigo}: ${reserva.origenDireccion} → ${reserva.destinoDireccion}.`,
-        url: "/chofer",
+        url: "/driver",
       })
       const cuerpoCliente = `Tu reserva ${reserva.codigo} fue confirmada con el chofer ${chofer.name}.`
       if (reserva.clienteId) {
@@ -672,7 +730,7 @@ export const reservasRouter = createTRPCRouter({
           tipo: "reserva_aceptada",
           titulo: "Reserva confirmada",
           cuerpo: cuerpoCliente,
-          url: `/cliente/reservas/${reserva.id}`,
+          url: `/customer/bookings/${reserva.id}`,
           emailDestino: reserva.emailContacto,
         })
       } else if (reserva.emailContacto) {
