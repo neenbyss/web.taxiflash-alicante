@@ -18,7 +18,13 @@ const schema = z
     BETTER_AUTH_SECRET: z.string().min(32),
     BETTER_AUTH_URL: z.url(),
     NEXT_PUBLIC_APP_URL: z.url(),
-    TRUSTED_PROXY_HEADER: z.enum(["x-real-ip", "cf-connecting-ip"]).optional(),
+    GOOGLE_SITE_VERIFICATION: z.string().optional(),
+    NEXT_PUBLIC_GOOGLE_ANALYTICS_ID: z.string().optional(),
+    BETTER_AUTH_TRUSTED_ORIGINS: z.string().optional(),
+    TRUSTED_PROXY_HEADER: z
+      .enum(["x-forwarded-for", "x-real-ip", "cf-connecting-ip"])
+      .optional(),
+    TRUSTED_PROXY_IPS: z.string().optional(),
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
     EMAIL_PROVIDER: z.enum(["resend", "smtp", "disabled"]),
@@ -37,15 +43,25 @@ const schema = z
     SEED_ADMIN_PASSWORD: z.string().min(8),
   })
   .superRefine((env, ctx) => {
-    if (
-      new URL(env.BETTER_AUTH_URL).origin !==
-      new URL(env.NEXT_PUBLIC_APP_URL).origin
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["NEXT_PUBLIC_APP_URL"],
-        message: "debe tener el mismo origen que BETTER_AUTH_URL",
-      })
+    const origins = (env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean)
+    for (const origin of origins) {
+      try {
+        const parsed = new URL(origin)
+        if (
+          parsed.origin !== origin ||
+          !["http:", "https:"].includes(parsed.protocol)
+        )
+          throw new Error("invalid origin")
+      } catch {
+        ctx.addIssue({
+          code: "custom",
+          path: ["BETTER_AUTH_TRUSTED_ORIGINS"],
+          message: `${origin} no es un origen HTTP(S) exacto`,
+        })
+      }
     }
     if (Boolean(env.GOOGLE_CLIENT_ID) !== Boolean(env.GOOGLE_CLIENT_SECRET)) {
       ctx.addIssue({
@@ -53,6 +69,16 @@ const schema = z
         path: ["GOOGLE_CLIENT_ID"],
         message:
           "GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET deben configurarse juntos",
+      })
+    }
+    if (
+      env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID &&
+      !/^G-[A-Z0-9]+$/i.test(env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["NEXT_PUBLIC_GOOGLE_ANALYTICS_ID"],
+        message: "debe ser un identificador GA4 con formato G-XXXXXXXXXX",
       })
     }
     if (env.SMTP_USER && !env.SMTP_PASS) {
@@ -70,6 +96,17 @@ const schema = z
         code: "custom",
         path: ["RESEND_API_KEY"],
         message: "es obligatoria cuando EMAIL_PROVIDER=resend",
+      })
+    }
+    if (
+      env.EMAIL_PROVIDER === "resend" &&
+      /@[^>\s]*\.local>?$/i.test(env.EMAIL_FROM)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["EMAIL_FROM"],
+        message:
+          "Resend no puede enviar desde un dominio .local; usa onboarding@resend.dev o un dominio verificado",
       })
     }
     if (env.EMAIL_PROVIDER === "smtp" && !env.SMTP_HOST) {

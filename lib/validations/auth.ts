@@ -9,6 +9,23 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>
 
+export const recuperarEmailSchema = z.object({
+  email: z.email("Email inválido").max(254),
+})
+
+export const recuperarPasswordSchema = z.object({
+  otp: z.string().regex(/^\d{6}$/, "Introduce los 6 dígitos"),
+  password: z
+    .string()
+    .min(8, "Mínimo 8 caracteres")
+    .max(128)
+    .regex(/[a-zA-Z]/, "Debe incluir letras")
+    .regex(/\d/, "Debe incluir al menos un número"),
+})
+
+export type RecuperarEmailInput = z.infer<typeof recuperarEmailSchema>
+export type RecuperarPasswordInput = z.infer<typeof recuperarPasswordSchema>
+
 export const registroEmailSchema = z.object({
   email: z.email("Email inválido").max(254),
 })

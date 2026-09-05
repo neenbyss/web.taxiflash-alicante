@@ -3,6 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma"
 import { APIError, createAuthMiddleware } from "better-auth/api"
 import { emailOTP } from "better-auth/plugins"
 
+import { getAuthOrigins } from "@/lib/auth-origins"
 import {
   ONBOARDING_COOKIE,
   readCookieHeader,
@@ -17,20 +18,47 @@ const googleEnabled = Boolean(
 )
 const trustedProxyHeader =
   process.env.TRUSTED_PROXY_HEADER?.trim().toLowerCase()
+const trustedProxyIps = (process.env.TRUSTED_PROXY_IPS ?? "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean)
+const authOrigins = getAuthOrigins()
+const authFallback = process.env.BETTER_AUTH_URL ?? authOrigins[0]
+const authProtocol =
+  authFallback && new URL(authFallback).protocol === "http:" ? "http" : "https"
 
 // Máximo de cuentas nuevas por IP en 24h (anti-bot).
 const MAX_CUENTAS_POR_IP_24H = 5
 
 export const auth = betterAuth({
   database: prismaAdapter(db, { provider: "postgresql" }),
-  baseURL: process.env.BETTER_AUTH_URL,
-  trustedOrigins: process.env.BETTER_AUTH_URL
-    ? [process.env.BETTER_AUTH_URL]
-    : [],
+  // Resuelve el origen por petición, pero solo entre hosts declarados. Esto
+  // permite probar desde localhost y desde un teléfono en la LAN sin aceptar
+  // hosts arbitrarios ni desactivar la protección CSRF.
+  baseURL:
+    authOrigins.length > 0
+      ? {
+          allowedHosts: authOrigins.map((origin) => new URL(origin).host),
+          // En el build standalone NODE_ENV es production. Declarar "http" es
+          // necesario durante la prueba LAN para que la cookie no lleve Secure;
+          // al publicar, BETTER_AUTH_URL debe ser HTTPS y esto cambia a "https".
+          protocol: authProtocol,
+          fallback: authFallback,
+        }
+      : undefined,
+  trustedOrigins: authOrigins,
   advanced:
     trustedProxyHeader === "x-real-ip" ||
-    trustedProxyHeader === "cf-connecting-ip"
-      ? { ipAddress: { ipAddressHeaders: [trustedProxyHeader] } }
+    trustedProxyHeader === "cf-connecting-ip" ||
+    trustedProxyHeader === "x-forwarded-for"
+      ? {
+          ipAddress: {
+            ipAddressHeaders: [trustedProxyHeader],
+            ...(trustedProxyIps.length > 0
+              ? { trustedProxies: trustedProxyIps }
+              : {}),
+          },
+        }
       : undefined,
   emailAndPassword: {
     enabled: true,

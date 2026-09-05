@@ -102,30 +102,34 @@ Sal con `\q`. `docker compose down` conserva los datos; `docker compose down
 
 Parte siempre de `.env.example`.
 
-| Variable                  | Uso                                                                 |
-| ------------------------- | ------------------------------------------------------------------- |
-| `DATABASE_URL`            | Desde el host debe usar PostgreSQL en `localhost:5433`              |
-| `POSTGRES_USER`           | Usuario creado por PostgreSQL en Docker                             |
-| `POSTGRES_PASSWORD`       | Contraseña local de PostgreSQL; usa otra en producción              |
-| `POSTGRES_DB`             | Nombre de la base creada por Docker                                 |
-| `BETTER_AUTH_SECRET`      | Secreto aleatorio de al menos 32 caracteres                         |
-| `BETTER_AUTH_URL`         | Origen exacto de la aplicación                                      |
-| `NEXT_PUBLIC_APP_URL`     | Origen público, sin secretos                                        |
-| `TRUSTED_PROXY_HEADER`    | Cabecera sobrescrita por el proxy de producción                     |
-| `GOOGLE_CLIENT_ID`        | Client ID del OAuth de Google; déjalo vacío para ocultar Google     |
-| `GOOGLE_CLIENT_SECRET`    | Secreto OAuth de Google; debe configurarse junto con el ID          |
-| `EMAIL_PROVIDER`          | `resend`, `smtp` o `disabled`                                       |
-| `RESEND_API_KEY`          | API key de Resend; solo servidor, nunca uses prefijo `NEXT_PUBLIC_` |
-| `SMTP_HOST`               | Host SMTP; `localhost` cuando se usa Mailpit                        |
-| `SMTP_PORT`               | Puerto SMTP; Mailpit usa `1025`                                     |
-| `SMTP_USER` / `SMTP_PASS` | Credenciales SMTP cuando el proveedor las requiere                  |
-| `SMTP_SECURE`             | `true` para TLS directo (normalmente puerto 465)                    |
-| `EMAIL_FROM`              | Remitente completo, por ejemplo `TaxiFlash <acceso@tudominio.es>`   |
-| `TARIFA_BASE`             | Bajada de bandera usada por la estimación                           |
-| `TARIFA_POR_KM`           | Importe estimado por kilómetro                                      |
-| `TARIFA_MINIMA`           | Importe mínimo estimado                                             |
-| `SEED_ADMIN_EMAIL`        | Correo del administrador local creado por el seed                   |
-| `SEED_ADMIN_PASSWORD`     | Contraseña local de ese administrador                               |
+| Variable                          | Uso                                                                 |
+| --------------------------------- | ------------------------------------------------------------------- |
+| `DATABASE_URL`                    | Desde el host debe usar PostgreSQL en `localhost:5433`              |
+| `POSTGRES_USER`                   | Usuario creado por PostgreSQL en Docker                             |
+| `POSTGRES_PASSWORD`               | Contraseña local de PostgreSQL; usa otra en producción              |
+| `POSTGRES_DB`                     | Nombre de la base creada por Docker                                 |
+| `BETTER_AUTH_SECRET`              | Secreto aleatorio de al menos 32 caracteres                         |
+| `BETTER_AUTH_URL`                 | Origen exacto de la aplicación                                      |
+| `NEXT_PUBLIC_APP_URL`             | Origen público, sin secretos                                        |
+| `GOOGLE_SITE_VERIFICATION`        | Token de la etiqueta HTML entregado por Google Search Console       |
+| `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | Identificador GA4 (`G-...`); solo carga con consentimiento          |
+| `BETTER_AUTH_TRUSTED_ORIGINS`     | Orígenes exactos permitidos, separados por comas                    |
+| `TRUSTED_PROXY_HEADER`            | Cabecera sobrescrita por el proxy de producción                     |
+| `TRUSTED_PROXY_IPS`               | IP o CIDR de cada proxy confiable, separados por comas              |
+| `GOOGLE_CLIENT_ID`                | Client ID del OAuth de Google; déjalo vacío para ocultar Google     |
+| `GOOGLE_CLIENT_SECRET`            | Secreto OAuth de Google; debe configurarse junto con el ID          |
+| `EMAIL_PROVIDER`                  | `resend`, `smtp` o `disabled`                                       |
+| `RESEND_API_KEY`                  | API key de Resend; solo servidor, nunca uses prefijo `NEXT_PUBLIC_` |
+| `SMTP_HOST`                       | Host SMTP; `localhost` cuando se usa Mailpit                        |
+| `SMTP_PORT`                       | Puerto SMTP; Mailpit usa `1025`                                     |
+| `SMTP_USER` / `SMTP_PASS`         | Credenciales SMTP cuando el proveedor las requiere                  |
+| `SMTP_SECURE`                     | `true` para TLS directo (normalmente puerto 465)                    |
+| `EMAIL_FROM`                      | Remitente completo, por ejemplo `TaxiFlash <acceso@tudominio.es>`   |
+| `TARIFA_BASE`                     | Bajada de bandera usada por la estimación                           |
+| `TARIFA_POR_KM`                   | Importe estimado por kilómetro                                      |
+| `TARIFA_MINIMA`                   | Importe mínimo estimado                                             |
+| `SEED_ADMIN_EMAIL`                | Correo del administrador local creado por el seed                   |
+| `SEED_ADMIN_PASSWORD`             | Contraseña local de ese administrador                               |
 
 Configuración mínima para probar Resend:
 
@@ -156,6 +160,50 @@ Después de modificar `.env`, reinicia `yarn dev` y comprueba la configuración:
 ```bash
 yarn env:check
 ```
+
+Puedes comprobar el proveedor sin enviar a una persona real. Por defecto usa
+la dirección sintética `delivered@resend.dev`:
+
+```bash
+yarn email:check
+```
+
+### Probar desde un teléfono en la red local
+
+Con el ordenador en `192.168.3.10`, usa temporalmente:
+
+```dotenv
+BETTER_AUTH_URL="http://192.168.3.10:3500"
+NEXT_PUBLIC_APP_URL="http://192.168.3.10:3500"
+BETTER_AUTH_TRUSTED_ORIGINS="http://localhost:3500,http://127.0.0.1:3500,http://192.168.3.10:3500"
+TRUSTED_PROXY_HEADER="x-forwarded-for"
+TRUSTED_PROXY_IPS=""
+```
+
+Después ejecuta `yarn dev` y abre `http://192.168.3.10:3500` en el teléfono.
+El firewall de Windows debe permitir conexiones privadas al puerto 3500.
+`x-forwarded-for` sin proxy se admite aquí únicamente para pruebas LAN. En una
+publicación real coloca nginx, Cloudflare u otro proxy delante del servidor,
+haz que sobrescriba la cabecera y configura su IP exacta en
+`TRUSTED_PROXY_IPS`; no declares toda la red de clientes como confiable.
+
+Como el proyecto genera `output: "standalone"`, el arranque del build es:
+
+```bash
+yarn build
+yarn start
+```
+
+`yarn start` ejecuta internamente `.next/standalone/server.js` en
+`0.0.0.0:3500`, por lo que ya no debe usarse `next start`. El paso `postbuild`
+copia automáticamente `public/` y `.next/static/` al paquete standalone; estos
+directorios son necesarios para que las imágenes, estilos y JavaScript del
+navegador carguen correctamente.
+
+Para producción reemplaza los tres orígenes locales por el dominio HTTPS real.
+Google OAuth requiere registrar también la URL exacta de callback; Google puede
+rechazar una IP privada como origen OAuth, aunque el acceso por correo y OTP sí
+funciona en la LAN.
 
 ## Registro y recuperación de acceso
 
@@ -193,6 +241,45 @@ contraseñas del seed en producción.
 
 En caso de fuga, aísla el origen, conserva logs, rota secretos y credenciales,
 revoca sesiones y determina los datos afectados.
+
+## Publicar temporalmente en Vercel
+
+Vercel construye Next.js directamente; el modo `standalone` se conserva para
+Docker y no altera ese despliegue. PostgreSQL de Docker local no es accesible
+desde Vercel: conecta una base administrada y usa su `DATABASE_URL`.
+
+1. Importa el repositorio en Vercel o ejecuta `npx vercel link`.
+2. Añade las variables de `.env.example` en **Settings → Environment Variables**.
+3. Usa el dominio HTTPS final en `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL` y
+   `BETTER_AUTH_TRUSTED_ORIGINS`.
+4. Configura Resend con una API key de producción y un `EMAIL_FROM` de un
+   dominio verificado.
+5. Para Google OAuth registra `https://TU-DOMINIO/api/auth/callback/google`.
+6. Aplica las migraciones una sola vez contra la base remota y despliega:
+
+```bash
+npx vercel env pull .env.production.local
+yarn db:generate
+yarn db:deploy
+npx vercel --prod
+```
+
+No ejecutes `yarn db:seed` en producción. `prebuild` genera Prisma antes del
+build. Para SEO, `GOOGLE_SITE_VERIFICATION` recibe el contenido de la etiqueta
+de Search Console y `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` el ID `G-...`. Tras el
+despliegue comprueba `/robots.txt` y `/sitemap.xml`, y envía este último desde
+Search Console. Analytics se carga únicamente tras aceptar cookies.
+
+```bash
+yarn env:check
+yarn lint
+yarn typecheck
+yarn build
+```
+
+El mapa usa teselas estándar de OpenStreetMap sin API key. Ese servicio
+comunitario no ofrece SLA; para tráfico comercial elevado se debe elegir un
+proveedor compatible o alojar teselas propias, conservando la atribución.
 
 ## Problemas frecuentes
 

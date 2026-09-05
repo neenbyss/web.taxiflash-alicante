@@ -3,7 +3,11 @@
 import { RiSearchLine } from "@/components/icons"
 import { useEffect, useRef, useState } from "react"
 
-import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { buscarDireccion, type ResultadoGeocoding } from "@/lib/geocoding"
 
 type DireccionSearchProps = {
@@ -14,7 +18,12 @@ type DireccionSearchProps = {
 }
 
 /** Autocomplete de direcciones (Nominatim) con debounce. */
-export function DireccionSearch({ id, placeholder, onSelect, autoFocus }: DireccionSearchProps) {
+export function DireccionSearch({
+  id,
+  placeholder,
+  onSelect,
+  autoFocus,
+}: DireccionSearchProps) {
   const [consulta, setConsulta] = useState("")
   const [resultados, setResultados] = useState<ResultadoGeocoding[]>([])
   const [abierto, setAbierto] = useState(false)
@@ -44,18 +53,21 @@ export function DireccionSearch({ id, placeholder, onSelect, autoFocus }: Direcc
 
   return (
     <div className="relative">
-      <RiSearchLine className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-      <Input
-        id={id}
-        autoFocus={autoFocus}
-        value={consulta}
-        onChange={(e) => setConsulta(e.target.value)}
-        onFocus={() => resultados.length > 0 && setAbierto(true)}
-        onBlur={() => setTimeout(() => setAbierto(false), 150)}
-        placeholder={placeholder ?? "Buscar dirección…"}
-        className="bg-background pl-9"
-        aria-label="Buscar dirección"
-      />
+      <InputGroup className="bg-background">
+        <InputGroupAddon>
+          <RiSearchLine aria-hidden />
+        </InputGroupAddon>
+        <InputGroupInput
+          id={id}
+          autoFocus={autoFocus}
+          value={consulta}
+          onChange={(e) => setConsulta(e.target.value)}
+          onFocus={() => resultados.length > 0 && setAbierto(true)}
+          onBlur={() => setTimeout(() => setAbierto(false), 150)}
+          placeholder={placeholder ?? "Buscar dirección…"}
+          aria-label="Buscar dirección"
+        />
+      </InputGroup>
       {abierto && resultados.length > 0 && (
         <ul className="absolute top-full right-0 left-0 z-30 mt-1 max-h-56 overflow-y-auto rounded-xl border bg-popover text-sm shadow-lg">
           {resultados.map((resultado, i) => (

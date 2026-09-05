@@ -8,6 +8,11 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -67,8 +72,13 @@ export function DateTimePicker({
           />
         }
       >
-        <RiCalendarLine className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-        {value ? format(value, "d MMM yyyy, HH:mm", { locale: es }) : placeholder}
+        <RiCalendarLine
+          className="size-5 shrink-0 text-muted-foreground"
+          aria-hidden
+        />
+        {value
+          ? format(value, "d MMM yyyy, HH:mm", { locale: es })
+          : placeholder}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
@@ -78,21 +88,22 @@ export function DateTimePicker({
           disabled={{ before: new Date() }}
           autoFocus
         />
-        <div className="flex items-center gap-2 border-t p-3">
-          <label
-            htmlFor="dtp-hora"
-            className="flex items-center gap-1.5 text-sm text-muted-foreground"
-          >
-            <RiTimeLine className="size-4" aria-hidden />
+        <div className="flex items-center gap-2 p-3">
+          <label htmlFor="dtp-hora" className="sr-only">
             Hora
           </label>
-          <input
-            id="dtp-hora"
-            type="time"
-            value={hora}
-            onChange={(e) => cambiarHora(e.target.value)}
-            className="h-9 flex-1 rounded-md bg-input px-2 text-sm outline-none ring ring-ring/40 focus:ring-2 focus:ring-primary"
-          />
+          <InputGroup>
+            <InputGroupAddon>
+              <RiTimeLine aria-hidden />
+            </InputGroupAddon>
+            <InputGroupInput
+              id="dtp-hora"
+              type="time"
+              value={hora}
+              onChange={(e) => cambiarHora(e.target.value)}
+              aria-label="Hora"
+            />
+          </InputGroup>
           {value && (
             <Button
               type="button"

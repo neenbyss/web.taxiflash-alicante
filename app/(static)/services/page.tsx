@@ -1,13 +1,5 @@
-import { Hero } from "@/components/common/hero";
+import { permanentRedirect } from "next/navigation"
 
 export default function ServicesPage() {
-  return (
-    <main className="lg:p-2 space-y-5">
-      <h1 className="sr-only"> Servicios de Taxi Gold Alicante </h1>
-      <Hero
-        title="Nuestros Servicios"
-        description="Soluciones de transporte adaptadas a cada momento: traslados al aeropuerto, taxi urbano, rutas turísticas y mucho más."
-      />
-    </main>
-  );
+  permanentRedirect("/about")
 }

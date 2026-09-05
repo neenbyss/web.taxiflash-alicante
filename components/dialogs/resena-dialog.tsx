@@ -5,6 +5,11 @@ import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
+import {
+  FormInputControl,
+  FormTextareaControl,
+} from "@/components/forms/form-control"
+import { RiMessageLine, RiStarLine } from "@/components/icons"
 import { StarRating } from "@/components/shared/star-rating"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,8 +26,6 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { trpc } from "@/lib/trpc"
 import {
   crearResenaSchema,
@@ -75,30 +78,32 @@ export function ResenaDialog({ reservaId }: { reservaId: string }) {
                 control={form.control}
                 name="puntuacion"
                 render={({ field }) => (
-                  <StarRating valor={field.value} onChange={field.onChange} tamano="lg" />
+                  <StarRating
+                    valor={field.value}
+                    onChange={field.onChange}
+                    tamano="lg"
+                  />
                 )}
               />
               <FieldError errors={[errores.puntuacion]} />
             </Field>
-            <Field data-invalid={Boolean(errores.titulo)}>
-              <FieldLabel htmlFor="resena-titulo">Título *</FieldLabel>
-              <Input
-                id="resena-titulo"
-                placeholder="Ej.: Excelente servicio"
-                {...form.register("titulo")}
-              />
-              <FieldError errors={[errores.titulo]} />
-            </Field>
-            <Field data-invalid={Boolean(errores.descripcion)}>
-              <FieldLabel htmlFor="resena-descripcion">Descripción *</FieldLabel>
-              <Textarea
-                id="resena-descripcion"
-                rows={4}
-                placeholder="Cuéntanos cómo fue el viaje…"
-                {...form.register("descripcion")}
-              />
-              <FieldError errors={[errores.descripcion]} />
-            </Field>
+            <FormInputControl
+              id="resena-titulo"
+              label="Título *"
+              icon={RiStarLine}
+              error={errores.titulo}
+              placeholder="Ej.: Excelente servicio"
+              {...form.register("titulo")}
+            />
+            <FormTextareaControl
+              id="resena-descripcion"
+              label="Descripción *"
+              icon={RiMessageLine}
+              error={errores.descripcion}
+              rows={4}
+              placeholder="Cuéntanos cómo fue el viaje…"
+              {...form.register("descripcion")}
+            />
             <Button type="submit" disabled={crear.isPending}>
               {crear.isPending ? "Enviando…" : "Publicar reseña"}
             </Button>

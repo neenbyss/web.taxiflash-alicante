@@ -133,6 +133,13 @@ export function LoginForm({
                   onClick={() => setShowPassword((s) => !s)}
                   variant="ghost"
                   size="icon-xs"
+                  aria-label={
+                    showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                  }
+                  title={
+                    showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                  }
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? <RiEyeOffFill /> : <RiEyeFill />}
                 </InputGroupButton>

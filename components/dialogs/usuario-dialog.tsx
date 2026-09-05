@@ -5,6 +5,13 @@ import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
+import { FormInputControl } from "@/components/forms/form-control"
+import {
+  RiLockFill,
+  RiMailLine,
+  RiPhoneLine,
+  RiUser3Line,
+} from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -20,7 +27,6 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -35,7 +41,10 @@ import {
   type CrearUsuarioAdminInput,
 } from "@/lib/validations/usuario"
 
-const ITEMS_ROL = Object.entries(ROL_LABEL).map(([value, label]) => ({ value, label }))
+const ITEMS_ROL = Object.entries(ROL_LABEL).map(([value, label]) => ({
+  value,
+  label,
+}))
 
 /** Alta manual de cuentas (cliente, chofer o admin) desde el panel. */
 export function UsuarioDialog({ onGuardado }: { onGuardado?: () => void }) {
@@ -73,18 +82,27 @@ export function UsuarioDialog({ onGuardado }: { onGuardado?: () => void }) {
             Alta manual de un cliente, chofer o administrador.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={form.handleSubmit((values) => crear.mutate(values))} noValidate>
+        <form
+          onSubmit={form.handleSubmit((values) => crear.mutate(values))}
+          noValidate
+        >
           <FieldGroup>
-            <Field data-invalid={Boolean(errores.name)}>
-              <FieldLabel htmlFor="nuevo-name">Nombre *</FieldLabel>
-              <Input id="nuevo-name" {...form.register("name")} />
-              <FieldError errors={[errores.name]} />
-            </Field>
-            <Field data-invalid={Boolean(errores.email)}>
-              <FieldLabel htmlFor="nuevo-email">Email *</FieldLabel>
-              <Input id="nuevo-email" type="email" {...form.register("email")} />
-              <FieldError errors={[errores.email]} />
-            </Field>
+            <FormInputControl
+              id="nuevo-name"
+              label="Nombre *"
+              icon={RiUser3Line}
+              error={errores.name}
+              {...form.register("name")}
+            />
+            <FormInputControl
+              id="nuevo-email"
+              label="Email *"
+              icon={RiMailLine}
+              error={errores.email}
+              type="email"
+              autoComplete="email"
+              {...form.register("email")}
+            />
             <div className="grid gap-4 sm:grid-cols-2">
               <Field data-invalid={Boolean(errores.role)}>
                 <FieldLabel>Rol *</FieldLabel>
@@ -114,17 +132,26 @@ export function UsuarioDialog({ onGuardado }: { onGuardado?: () => void }) {
                 />
                 <FieldError errors={[errores.role]} />
               </Field>
-              <Field data-invalid={Boolean(errores.telefono)}>
-                <FieldLabel htmlFor="nuevo-telefono">Teléfono</FieldLabel>
-                <Input id="nuevo-telefono" type="tel" {...form.register("telefono")} />
-                <FieldError errors={[errores.telefono]} />
-              </Field>
+              <FormInputControl
+                id="nuevo-telefono"
+                label="Teléfono"
+                icon={RiPhoneLine}
+                error={errores.telefono}
+                type="tel"
+                autoComplete="tel"
+                {...form.register("telefono")}
+              />
             </div>
-            <Field data-invalid={Boolean(errores.password)}>
-              <FieldLabel htmlFor="nuevo-password">Contraseña inicial *</FieldLabel>
-              <Input id="nuevo-password" type="password" {...form.register("password")} />
-              <FieldError errors={[errores.password]} />
-            </Field>
+            <FormInputControl
+              id="nuevo-password"
+              label="Contraseña inicial *"
+              icon={RiLockFill}
+              error={errores.password}
+              type="password"
+              revealPassword
+              autoComplete="new-password"
+              {...form.register("password")}
+            />
             <Button type="submit" disabled={crear.isPending}>
               {crear.isPending ? "Creando…" : "Crear cuenta"}
             </Button>

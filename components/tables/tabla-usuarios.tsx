@@ -8,7 +8,12 @@ import { UsuarioDialog } from "@/components/dialogs/usuario-dialog"
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { RiSearchLine } from "@/components/icons"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import {
   Select,
   SelectContent,
@@ -65,13 +70,17 @@ export function TablaUsuarios() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Input
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscar por nombre o email…"
-          className="max-w-xs"
-          aria-label="Buscar usuarios"
-        />
+        <InputGroup className="max-w-xs">
+          <InputGroupAddon>
+            <RiSearchLine aria-hidden />
+          </InputGroupAddon>
+          <InputGroupInput
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por nombre o email…"
+            aria-label="Buscar usuarios"
+          />
+        </InputGroup>
         <Select
           value={rol}
           onValueChange={(valor) => setRol((valor as RolFiltro) ?? "TODOS")}
@@ -96,7 +105,7 @@ export function TablaUsuarios() {
       {usuarios.isLoading ? (
         <Skeleton className="h-64 rounded-2xl" />
       ) : (
-        <div className="min-w-0 max-w-full overflow-hidden rounded-2xl bg-card">
+        <div className="max-w-full min-w-0 overflow-hidden rounded-2xl bg-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -111,7 +120,10 @@ export function TablaUsuarios() {
             <TableBody>
               {filas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={6}
+                    className="py-8 text-center text-muted-foreground"
+                  >
                     Sin resultados.
                   </TableCell>
                 </TableRow>
@@ -120,9 +132,13 @@ export function TablaUsuarios() {
                 <TableRow key={usuario.id}>
                   <TableCell>
                     <p className="font-medium">{usuario.name}</p>
-                    <p className="text-xs text-muted-foreground">{usuario.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {usuario.email}
+                    </p>
                   </TableCell>
-                  <TableCell>{ROL_LABEL[usuario.role] ?? usuario.role}</TableCell>
+                  <TableCell>
+                    {ROL_LABEL[usuario.role] ?? usuario.role}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant="secondary"
@@ -175,7 +191,10 @@ export function TablaUsuarios() {
                           size="sm"
                           disabled={actualizar.isPending}
                           onClick={() =>
-                            actualizar.mutate({ userId: usuario.id, activo: true })
+                            actualizar.mutate({
+                              userId: usuario.id,
+                              activo: true,
+                            })
                           }
                         >
                           Reactivar

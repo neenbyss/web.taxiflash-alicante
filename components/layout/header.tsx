@@ -1,6 +1,12 @@
 "use client"
 
-import { RiArrowRightUpLine, RiCloseLine, RiMailLine, RiMenu3Line, RiPhoneLine } from "@/components/icons"
+import {
+  RiArrowRightUpLine,
+  RiCloseLine,
+  RiMailLine,
+  RiMenu3Line,
+  RiPhoneLine,
+} from "@/components/icons"
 import { AnimatePresence, m, useReducedMotion } from "motion/react"
 import Link from "next/link"
 import Image from "next/image"
@@ -14,7 +20,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 
 const NAV = [
   { href: "/", label: "Inicio", index: "01" },
-  { href: "/services", label: "Servicios", index: "02" },
+  { href: "/about", label: "Nosotros", index: "02" },
   { href: "/ubicaciones", label: "Ubicaciones", index: "03" },
 ]
 
@@ -47,7 +53,8 @@ export function Header() {
 
     root.style.overflow = "hidden"
     document.body.style.overflow = "hidden"
-    if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`
+    if (scrollbarWidth > 0)
+      document.body.style.paddingRight = `${scrollbarWidth}px`
 
     const closeOnEscape = (event: KeyboardEvent) =>
       event.key === "Escape" && setMenuOpen(false)
@@ -66,7 +73,7 @@ export function Header() {
       <header
         className={cn(
           "absolute inset-x-0 top-0 z-50 text-white transition-[opacity,transform] duration-300 ease-out will-change-[transform,opacity] motion-reduce:transition-none",
-          scrolled && "-translate-y-4 opacity-0",
+          scrolled && "-translate-y-4 opacity-0"
         )}
         aria-hidden={scrolled}
         inert={scrolled ? true : undefined}
@@ -78,14 +85,17 @@ export function Header() {
             className="relative z-10 text-white [&_.text-muted-foreground]:text-white/55 [&>.font-heading]:hidden sm:[&>.font-heading]:flex"
           />
 
-          <nav aria-label="Navegación principal" className="ml-auto hidden pr-8 md:block">
+          <nav
+            aria-label="Navegación principal"
+            className="ml-auto hidden pr-8 md:block"
+          >
             <ul className="flex items-center gap-2 text-xs sm:gap-7 sm:text-sm lg:gap-10">
               {NAV.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     aria-current={item.href === path ? "page" : undefined}
-                    className="group/link relative py-3 text-lg text-white/50 uppercase transition hover:text-white hover:after:scale-x-100 aria-[current=page]:text-primary font-medium"
+                    className="group/link relative py-3 text-lg font-medium text-white/50 uppercase transition hover:text-white hover:after:scale-x-100 aria-[current=page]:text-primary"
                   >
                     {item.label}
 
@@ -101,7 +111,7 @@ export function Header() {
       <div
         className={cn(
           "fixed top-6 z-50 hidden transition-[right] duration-500 ease-out md:block",
-          scrolled ? "right-22" : "right-6",
+          scrolled ? "right-22" : "right-6"
         )}
       >
         <Button
@@ -121,7 +131,7 @@ export function Header() {
           "fixed top-4 right-4 z-50 grid size-13 place-items-center rounded-lg bg-secondary p-0 text-secondary-foreground shadow-lg transition-[color,background-color,opacity,transform] duration-300 hover:bg-primary hover:text-primary-foreground sm:top-6 sm:right-6",
           scrolled
             ? "md:translate-x-0 md:opacity-100"
-            : "md:pointer-events-none md:translate-x-4 md:opacity-0",
+            : "md:pointer-events-none md:translate-x-4 md:opacity-0"
         )}
       >
         <RiMenu3Line className="size-5" aria-hidden />
@@ -191,7 +201,7 @@ export function Header() {
                           <span className="self-start pt-2 font-mono text-sm text-white/35 sm:pt-4">
                             {item.index}
                           </span>
-                          <span className="font-heading group-hover:ps-6 transition-all text-[clamp(2.25rem,8vw,4.5rem)] leading-none tracking-tight text-white/75 group-aria-[current=page]:text-primary!">
+                          <span className="font-heading text-[clamp(2.25rem,8vw,4.5rem)] leading-none tracking-tight text-white/75 transition-all group-hover:ps-6 group-aria-[current=page]:text-primary!">
                             {item.label}
                           </span>
                           <RiArrowRightUpLine className="ml-auto size-7 -translate-x-3 opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100 sm:size-10" />
@@ -204,7 +214,10 @@ export function Header() {
                 <m.aside
                   initial={animateMenu ? { opacity: 0, y: 24 } : false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: animateMenu ? 0.28 : 0, duration: animateMenu ? 0.5 : 0 }}
+                  transition={{
+                    delay: animateMenu ? 0.28 : 0,
+                    duration: animateMenu ? 0.5 : 0,
+                  }}
                   className="relative min-h-72 overflow-hidden rounded-[2rem] sm:min-h-96 lg:min-h-128"
                 >
                   <Image
@@ -222,19 +235,31 @@ export function Header() {
                     </p>
 
                     <div className="flex flex-col gap-3 text-sm text-white/70">
-                      <a href="tel:+34631288429" className="group flex items-center gap-3 transition hover:text-primary">
+                      <a
+                        href="tel:+34631288429"
+                        className="group flex items-center gap-3 transition hover:text-primary"
+                      >
                         <RiPhoneLine className="size-5" aria-hidden />
                         <span>+34 631 28 84 29</span>
                       </a>
-                      <a href="mailto:support@taxiflash.com" className="group flex items-center gap-3 break-all transition hover:text-primary">
+                      <a
+                        href="mailto:support@taxiflash.com"
+                        className="group flex items-center gap-3 break-all transition hover:text-primary"
+                      >
                         <RiMailLine className="size-5 shrink-0" aria-hidden />
                         <span>support@taxiflash.com</span>
                       </a>
                     </div>
 
-                    <Link href="/login" className="group inline-flex items-center gap-3 font-heading text-xl text-primary transition hover:text-white sm:text-2xl">
+                    <Link
+                      href="/login"
+                      className="group inline-flex items-center gap-3 font-heading text-xl text-primary transition hover:text-white sm:text-2xl"
+                    >
                       Reserva ahora
-                      <RiArrowRightUpLine className="size-6 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" aria-hidden />
+                      <RiArrowRightUpLine
+                        className="size-6 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1"
+                        aria-hidden
+                      />
                     </Link>
                   </div>
                 </m.aside>

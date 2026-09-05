@@ -2,20 +2,17 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
-import { useForm, useWatch } from "react-hook-form"
+import { Controller, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
 import { trpc } from "@/lib/trpc"
 import {
   crearAlquilerSchema,
@@ -53,19 +50,26 @@ export function AlquilerForm() {
   })
 
   return (
-    <form onSubmit={form.handleSubmit((values) => crear.mutate(values))} noValidate>
+    <form
+      onSubmit={form.handleSubmit((values) => crear.mutate(values))}
+      noValidate
+    >
       <FieldGroup>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field data-invalid={Boolean(errores.ciudadOrigen)}>
-            <FieldLabel htmlFor="alq-origen">Ciudad de origen *</FieldLabel>
-            <Input id="alq-origen" {...form.register("ciudadOrigen")} />
-            <FieldError errors={[errores.ciudadOrigen]} />
-          </Field>
-          <Field data-invalid={Boolean(errores.ciudadDestino)}>
-            <FieldLabel htmlFor="alq-destino">Ciudad de destino *</FieldLabel>
-            <Input id="alq-destino" {...form.register("ciudadDestino")} />
-            <FieldError errors={[errores.ciudadDestino]} />
-          </Field>
+          <FormInputControl
+            label="Ciudad de origen *"
+            icon={RiBuildingLine}
+            error={errores.ciudadOrigen}
+            id="alq-origen"
+            {...form.register("ciudadOrigen")}
+          />
+          <FormInputControl
+            label="Ciudad de destino *"
+            icon={RiBuildingLine}
+            error={errores.ciudadDestino}
+            id="alq-destino"
+            {...form.register("ciudadDestino")}
+          />
         </div>
 
         <Field>
@@ -73,7 +77,10 @@ export function AlquilerForm() {
           <Tabs
             value={modalidad}
             onValueChange={(valor) =>
-              form.setValue("modalidad", valor as CrearAlquilerInput["modalidad"])
+              form.setValue(
+                "modalidad",
+                valor as CrearAlquilerInput["modalidad"]
+              )
             }
           >
             <TabsList className="w-full" id="alq-modalidad">
@@ -88,45 +95,44 @@ export function AlquilerForm() {
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field data-invalid={Boolean(errores.fecha)}>
-            <FieldLabel htmlFor="alq-fecha">Fecha y hora *</FieldLabel>
-            <Input
-              id="alq-fecha"
-              type="datetime-local"
-              onChange={(e) =>
-                form.setValue(
-                  "fecha",
-                  e.target.value ? new Date(e.target.value) : (undefined as unknown as Date),
-                  { shouldValidate: form.formState.isSubmitted }
-                )
-              }
-            />
-            <FieldError errors={[errores.fecha]} />
-          </Field>
+          <Controller
+            control={form.control}
+            name="fecha"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel>Fecha y hora *</FieldLabel>
+                <DateTimePicker
+                  value={field.value ?? null}
+                  onChange={(value) => field.onChange(value ?? undefined)}
+                  placeholder="Seleccionar fecha y hora"
+                />
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
+          />
           {modalidad === "por_horas" && (
-            <Field data-invalid={Boolean(errores.horas)}>
-              <FieldLabel htmlFor="alq-horas">Horas *</FieldLabel>
-              <Input
-                id="alq-horas"
-                type="number"
-                min={1}
-                max={24}
-                {...form.register("horas", { valueAsNumber: true })}
-              />
-              <FieldError errors={[errores.horas]} />
-            </Field>
+            <FormInputControl
+              label="Horas *"
+              icon={RiTimeLine}
+              error={errores.horas}
+              id="alq-horas"
+              type="number"
+              min={1}
+              max={24}
+              {...form.register("horas", { valueAsNumber: true })}
+            />
           )}
         </div>
 
-        <Field data-invalid={Boolean(errores.notas)}>
-          <FieldLabel htmlFor="alq-notas">Notas</FieldLabel>
-          <Textarea id="alq-notas" rows={3} {...form.register("notas")} />
-          <FieldDescription>
-            El precio se confirma manualmente: recibirás la propuesta en tu
-            portal (y por email si está configurado).
-          </FieldDescription>
-          <FieldError errors={[errores.notas]} />
-        </Field>
+        <FormTextareaControl
+          label="Notas"
+          icon={RiFileTextLine}
+          error={errores.notas}
+          description="El precio se confirma manualmente: recibirás la propuesta en tu portal (y por email si está configurado)."
+          id="alq-notas"
+          rows={3}
+          {...form.register("notas")}
+        />
 
         <Button type="submit" size="lg" disabled={crear.isPending}>
           {crear.isPending ? "Enviando…" : "Solicitar presupuesto"}
@@ -135,3 +141,9 @@ export function AlquilerForm() {
     </form>
   )
 }
+import { DateTimePicker } from "@/components/forms/date-time-picker"
+import {
+  FormInputControl,
+  FormTextareaControl,
+} from "@/components/forms/form-control"
+import { RiBuildingLine, RiFileTextLine, RiTimeLine } from "@/components/icons"

@@ -24,9 +24,7 @@ export function Redirecting({ destination }: { destination: string }) {
           className="mt-10 size-7 animate-spin text-primary motion-reduce:animate-none"
           aria-hidden
         />
-        <h1 className="mt-5 font-heading text-2xl font-medium">
-          Preparando tu espacio
-        </h1>
+        <h1 className="mt-5 font-heading text-2xl font-medium">Redirigiendo</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Estamos comprobando tu acceso y abriendo el panel correcto.
         </p>

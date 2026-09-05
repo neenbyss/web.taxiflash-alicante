@@ -5,7 +5,12 @@ import { useState } from "react"
 import { AsignarReservaDialog } from "@/components/dialogs/asignar-reserva-dialog"
 import { EstadoBadge } from "@/components/shared/estado-badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { RiSearchLine } from "@/components/icons"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import {
   Select,
   SelectContent,
@@ -22,7 +27,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ESTADO_RESERVA_LABEL, formatearFecha, formatearMoneda } from "@/lib/formato"
+import {
+  ESTADO_RESERVA_LABEL,
+  formatearFecha,
+  formatearMoneda,
+} from "@/lib/formato"
 import { trpc } from "@/lib/trpc"
 
 type EstadoFiltro =
@@ -36,7 +45,10 @@ type EstadoFiltro =
 
 const ITEMS_FILTRO = [
   { value: "TODOS", label: "Todos los estados" },
-  ...Object.entries(ESTADO_RESERVA_LABEL).map(([value, label]) => ({ value, label })),
+  ...Object.entries(ESTADO_RESERVA_LABEL).map(([value, label]) => ({
+    value,
+    label,
+  })),
 ]
 
 /** Listado completo de reservas con filtros y asignación manual. */
@@ -62,16 +74,22 @@ export function TablaReservasAdmin() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Input
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscar por código, cliente o dirección…"
-          className="max-w-xs"
-          aria-label="Buscar reservas"
-        />
+        <InputGroup className="max-w-xs">
+          <InputGroupAddon>
+            <RiSearchLine aria-hidden />
+          </InputGroupAddon>
+          <InputGroupInput
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por código, cliente o dirección…"
+            aria-label="Buscar reservas"
+          />
+        </InputGroup>
         <Select
           value={estado}
-          onValueChange={(valor) => setEstado((valor as EstadoFiltro) ?? "TODOS")}
+          onValueChange={(valor) =>
+            setEstado((valor as EstadoFiltro) ?? "TODOS")
+          }
           items={ITEMS_FILTRO}
         >
           <SelectTrigger className="w-48">
@@ -90,7 +108,7 @@ export function TablaReservasAdmin() {
       {reservas.isLoading ? (
         <Skeleton className="h-64 rounded-2xl" />
       ) : (
-        <div className="min-w-0 max-w-full overflow-hidden rounded-2xl bg-card">
+        <div className="max-w-full min-w-0 overflow-hidden rounded-2xl bg-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -107,14 +125,19 @@ export function TablaReservasAdmin() {
             <TableBody>
               {filas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={8}
+                    className="py-8 text-center text-muted-foreground"
+                  >
                     No hay reservas con estos filtros.
                   </TableCell>
                 </TableRow>
               )}
               {filas.map((reserva) => (
                 <TableRow key={reserva.id}>
-                  <TableCell className="font-mono text-xs">{reserva.codigo}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {reserva.codigo}
+                  </TableCell>
                   <TableCell>
                     <EstadoBadge estado={reserva.estado} />
                   </TableCell>
@@ -130,7 +153,10 @@ export function TablaReservasAdmin() {
                     <p className="truncate" title={reserva.origenDireccion}>
                       {reserva.origenDireccion}
                     </p>
-                    <p className="truncate text-muted-foreground" title={reserva.destinoDireccion}>
+                    <p
+                      className="truncate text-muted-foreground"
+                      title={reserva.destinoDireccion}
+                    >
                       → {reserva.destinoDireccion}
                     </p>
                   </TableCell>
@@ -148,7 +174,9 @@ export function TablaReservasAdmin() {
                       <AsignarReservaDialog
                         reservaId={reserva.id}
                         codigo={reserva.codigo}
-                        onAsignada={() => void utils.reservas.listarAdmin.invalidate()}
+                        onAsignada={() =>
+                          void utils.reservas.listarAdmin.invalidate()
+                        }
                       />
                     )}
                   </TableCell>

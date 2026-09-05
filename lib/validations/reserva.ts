@@ -24,24 +24,38 @@ function haversineKm(a: Coordenada, b: Coordenada) {
 }
 
 function routeDistanceKm(points: Coordenada[]) {
-  return points.slice(1).reduce(
-    (total, point, index) => total + haversineKm(points[index], point),
-    0
-  )
+  return points
+    .slice(1)
+    .reduce(
+      (total, point, index) => total + haversineKm(points[index], point),
+      0
+    )
 }
 
 const coordenadaSchema = z.object({
-  lat: z.number().min(SPAIN_BOUNDS.minLat, "La ubicación debe estar en España").max(SPAIN_BOUNDS.maxLat, "La ubicación debe estar en España"),
-  lng: z.number().min(SPAIN_BOUNDS.minLng, "La ubicación debe estar en España").max(SPAIN_BOUNDS.maxLng, "La ubicación debe estar en España"),
+  lat: z
+    .number()
+    .min(SPAIN_BOUNDS.minLat, "La ubicación debe estar en España")
+    .max(SPAIN_BOUNDS.maxLat, "La ubicación debe estar en España"),
+  lng: z
+    .number()
+    .min(SPAIN_BOUNDS.minLng, "La ubicación debe estar en España")
+    .max(SPAIN_BOUNDS.maxLng, "La ubicación debe estar en España"),
 })
 
 function validateRoute(points: Coordenada[], context: z.RefinementCtx) {
   const distance = routeDistanceKm(points)
   if (distance < MIN_ROUTE_KM) {
-    context.addIssue({ code: "custom", message: "El origen y el destino deben ser diferentes" })
+    context.addIssue({
+      code: "custom",
+      message: "El origen y el destino deben ser diferentes",
+    })
   }
   if (distance > MAX_ROUTE_KM) {
-    context.addIssue({ code: "custom", message: `El recorrido no puede superar ${MAX_ROUTE_KM} km` })
+    context.addIssue({
+      code: "custom",
+      message: `El recorrido no puede superar ${MAX_ROUTE_KM} km`,
+    })
   }
 }
 
@@ -85,12 +99,27 @@ export const crearReservaSchema = z
 
 export type CrearReservaInput = z.infer<typeof crearReservaSchema>
 
-export const estimarTarifaSchema = z.object({
-  puntos: z
-    .array(coordenadaSchema)
-    .min(2, "Se necesitan al menos origen y destino")
-    .max(5),
-}).superRefine((data, context) => validateRoute(data.puntos, context))
+export const consultarReservaSchema = z.object({
+  codigo: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(
+      /^(?:R-[A-Z0-9]{8}|TF-\d{4})$/,
+      "Usa un código con el formato R-XXXXXXXX o TF-0000"
+    ),
+})
+
+export type ConsultarReservaInput = z.infer<typeof consultarReservaSchema>
+
+export const estimarTarifaSchema = z
+  .object({
+    puntos: z
+      .array(coordenadaSchema)
+      .min(2, "Se necesitan al menos origen y destino")
+      .max(5),
+  })
+  .superRefine((data, context) => validateRoute(data.puntos, context))
 
 export const cancelarReservaSchema = z.object({
   reservaId: z.cuid(),
@@ -109,7 +138,14 @@ export const asignarReservaSchema = z.object({
 
 export const filtrosReservasAdminSchema = z.object({
   estado: z
-    .enum(["PENDIENTE", "ACEPTADA", "EN_CURSO", "FINALIZADA", "CANCELADA", "RECHAZADA"])
+    .enum([
+      "PENDIENTE",
+      "ACEPTADA",
+      "EN_CURSO",
+      "FINALIZADA",
+      "CANCELADA",
+      "RECHAZADA",
+    ])
     .optional(),
   clienteId: z.cuid().optional(),
   choferId: z.cuid().optional(),

@@ -5,8 +5,22 @@
 // Este módulo debe cargarse con dynamic(..., { ssr: false }).
 
 import L from "leaflet"
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
-import { MapContainer, Marker, Pane, Polyline, TileLayer, useMap, useMapEvents } from "react-leaflet"
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react"
+import {
+  MapContainer,
+  Marker,
+  Pane,
+  Polyline,
+  TileLayer,
+  useMap,
+  useMapEvents,
+} from "react-leaflet"
 import { toast } from "sonner"
 
 import "leaflet/dist/leaflet.css"
@@ -45,7 +59,11 @@ const getWideMapServerSnapshot = () => false
 
 // Iconos como divIcon (círculos con etiqueta): sin assets de imagen, que el
 // bundler no resuelve bien con Leaflet.
-function crearIcono(etiqueta: string, color: string, kind: "start" | "stop" | "end") {
+function crearIcono(
+  etiqueta: string,
+  color: string,
+  kind: "start" | "stop" | "end"
+) {
   return L.divIcon({
     className: "",
     html: `<div class="taxiflash-map-marker" data-kind="${kind}" style="--marker-color:${color}"><span>${etiqueta}</span></div>`,
@@ -88,7 +106,13 @@ type RouteMarkerProps = {
   onMoved: (message: string) => void
 }
 
-function RouteMarker({ objetivo, punto, icon, onOpen, onMoved }: RouteMarkerProps) {
+function RouteMarker({
+  objetivo,
+  punto,
+  icon,
+  onOpen,
+  onMoved,
+}: RouteMarkerProps) {
   const { actualizarPunto, setPuntoActivo } = useReservaBorrador()
   const markerRef = useRef<L.Marker>(null)
   const geocodingSequence = useRef(0)
@@ -141,7 +165,8 @@ function RouteMarker({ objetivo, punto, icon, onOpen, onMoved }: RouteMarkerProp
           onOpen(objetivo)
         },
         dragstart: () => setPuntoActivo(objetivo),
-        dragend: (event) => void actualizarDesdeMarcador(event.target as L.Marker),
+        dragend: (event) =>
+          void actualizarDesdeMarcador(event.target as L.Marker),
       }}
     />
   )
@@ -173,10 +198,9 @@ function AjustarVista({ puntos }: { puntos: PuntoRuta[] }) {
     if (puntos.length === 1) {
       map.setView([puntos[0].lat, puntos[0].lng], 15)
     } else if (puntos.length > 1) {
-      map.fitBounds(
-        L.latLngBounds(puntos.map((p) => [p.lat, p.lng])),
-        { padding: [40, 40] }
-      )
+      map.fitBounds(L.latLngBounds(puntos.map((p) => [p.lat, p.lng])), {
+        padding: [40, 40],
+      })
     }
   }, [map, puntos])
   return null
@@ -206,7 +230,11 @@ function CurrentLocationControl() {
         const lat = coords.latitude
         const lng = coords.longitude
         setPuntoActivo("origen")
-        setPunto("origen", { direccion: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, lat, lng })
+        setPunto("origen", {
+          direccion: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+          lat,
+          lng,
+        })
         map.flyTo([lat, lng], 16, { duration: 0.8 })
         const direccion = await direccionInversa(lat, lng)
         setPunto("origen", { direccion, lat, lng })
@@ -218,7 +246,10 @@ function CurrentLocationControl() {
   }
 
   return (
-    <div ref={controlRef} className="absolute top-3 right-3 z-1000 lg:top-auto lg:right-87 lg:bottom-14">
+    <div
+      ref={controlRef}
+      className="absolute top-3 right-3 z-1000 lg:top-auto lg:right-87 lg:bottom-14"
+    >
       <Button
         type="button"
         size="icon"
@@ -226,10 +257,15 @@ function CurrentLocationControl() {
         className="size-11 shadow-lg"
         onClick={locate}
         disabled={loading}
-        aria-label={loading ? "Obteniendo tu ubicación" : "Usar mi ubicación como origen"}
+        aria-label={
+          loading ? "Obteniendo tu ubicación" : "Usar mi ubicación como origen"
+        }
         title="Usar mi ubicación"
       >
-        <RiMapPin2Line className="size-5 fill-primary/20 text-primary" aria-hidden />
+        <RiMapPin2Line
+          className="size-5 fill-primary/20 text-primary"
+          aria-hidden
+        />
       </Button>
     </div>
   )
@@ -300,7 +336,7 @@ export default function RouteMap() {
   )
 
   return (
-    <div className="relative isolate z-0 h-full w-full min-w-0 max-w-full overflow-hidden rounded-2xl bg-card shadow-sm lg:h-auto">
+    <div className="relative isolate z-0 h-full w-full max-w-full min-w-0 overflow-hidden rounded-2xl bg-card shadow-sm lg:h-auto">
       <div className="absolute top-3 right-84 left-16 z-20 hidden lg:block">
         <DireccionSearch
           placeholder={`Buscar dirección para ${etiquetaPuntoActivo(puntoActivo)}…`}
@@ -320,10 +356,9 @@ export default function RouteMap() {
         touchZoom
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          subdomains="abcd"
-          maxZoom={20}
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={19}
         />
         <InvalidateMapSize />
         <CurrentLocationControl />
@@ -345,7 +380,11 @@ export default function RouteMap() {
                 key={`parada-${i}`}
                 objetivo={{ parada: i }}
                 punto={parada}
-                icon={crearIcono(String(ordenParadas.get(i) ?? i + 1), "#f5b51b", "stop")}
+                icon={crearIcono(
+                  String(ordenParadas.get(i) ?? i + 1),
+                  "#f5b51b",
+                  "stop"
+                )}
                 onOpen={setPuntoEnDetalle}
                 onMoved={setMapStatus}
               />
@@ -362,7 +401,10 @@ export default function RouteMap() {
         )}
         {linea.length > 1 && (
           <Pane name="taxiflash-route" style={{ zIndex: 450 }}>
-            <Polyline positions={linea} pathOptions={{ color: "#242422", opacity: 0.35, weight: 9 }} />
+            <Polyline
+              positions={linea}
+              pathOptions={{ color: "#242422", opacity: 0.35, weight: 9 }}
+            />
             <Polyline
               positions={linea}
               pathOptions={{
@@ -377,20 +419,29 @@ export default function RouteMap() {
           </Pane>
         )}
       </MapContainer>
-      <p className="sr-only" role="status" aria-live="polite">{mapStatus}</p>
+      <p className="sr-only" role="status" aria-live="polite">
+        {mapStatus}
+      </p>
       {isWideMap && (
         <aside className="absolute top-3 right-3 bottom-3 z-20 w-80 overflow-y-auto rounded-2xl bg-background/96 p-3 shadow-[0_12px_40px_rgb(30_29_26/18%)]">
           <div className="mb-3 px-1">
             <p className="font-heading text-lg font-medium">Tu recorrido</p>
-            <p className="text-xs leading-relaxed text-muted-foreground">Selecciona una etapa y busca o toca el mapa.</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Selecciona una etapa y busca o toca el mapa.
+            </p>
           </div>
           <PuntosRuta />
-          <div className="mt-3"><TarifaEstimada /></div>
+          <div className="mt-3">
+            <TarifaEstimada />
+          </div>
         </aside>
       )}
 
       <div className="absolute inset-x-0 bottom-0 z-10 hidden flex-wrap items-center justify-between gap-2 bg-background/92 px-3 py-2 text-xs text-muted-foreground lg:right-83 lg:flex">
-        <p>Haz click o busca una dirección para fijar <strong>{etiquetaPuntoActivo(puntoActivo)}</strong>.</p>
+        <p>
+          Haz click o busca una dirección para fijar{" "}
+          <strong>{etiquetaPuntoActivo(puntoActivo)}</strong>.
+        </p>
         {ruta.isFetching ? (
           <span>Calculando mejor recorrido…</span>
         ) : ruta.data?.distanciaKm != null ? (
@@ -421,9 +472,12 @@ export default function RouteMap() {
                     <RiMapPin2Fill className="size-5" aria-hidden />
                   </span>
                   <div className="min-w-0">
-                    <SheetTitle className="text-xl">{nombrePunto(puntoEnDetalle)}</SheetTitle>
+                    <SheetTitle className="text-xl">
+                      {nombrePunto(puntoEnDetalle)}
+                    </SheetTitle>
                     <SheetDescription className="mt-1 leading-relaxed">
-                      Consulta el lugar, busca otra dirección o mantén pulsado el pin para moverlo.
+                      Consulta el lugar, busca otra dirección o mantén pulsado
+                      el pin para moverlo.
                     </SheetDescription>
                   </div>
                 </div>
@@ -431,17 +485,23 @@ export default function RouteMap() {
 
               <div className="space-y-5 px-6 pb-6">
                 <div className="rounded-2xl bg-muted/65 p-4">
-                  <p className="text-xs font-medium text-muted-foreground">Dirección seleccionada</p>
-                  <p className="mt-1.5 text-base leading-relaxed font-medium text-foreground [overflow-wrap:anywhere]">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Dirección seleccionada
+                  </p>
+                  <p className="mt-1.5 text-base leading-relaxed font-medium [overflow-wrap:anywhere] text-foreground">
                     {puntoSeleccionado.direccion}
                   </p>
                   <p className="mt-3 font-mono text-xs text-muted-foreground tabular-nums">
-                    {puntoSeleccionado.lat.toFixed(5)}, {puntoSeleccionado.lng.toFixed(5)}
+                    {puntoSeleccionado.lat.toFixed(5)},{" "}
+                    {puntoSeleccionado.lng.toFixed(5)}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="route-marker-search">
+                  <label
+                    className="text-sm font-medium"
+                    htmlFor="route-marker-search"
+                  >
                     Cambiar este lugar
                   </label>
                   <div>
@@ -457,9 +517,13 @@ export default function RouteMap() {
                 </div>
 
                 <div className="flex items-start gap-3 rounded-2xl bg-secondary p-4 text-secondary-foreground">
-                  <RiHandLine className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+                  <RiHandLine
+                    className="mt-0.5 size-5 shrink-0 text-primary"
+                    aria-hidden
+                  />
                   <p className="text-sm leading-relaxed">
-                    En el mapa, mantén el dedo sobre este pin y arrástralo. La dirección se actualizará al soltarlo.
+                    En el mapa, mantén el dedo sobre este pin y arrástralo. La
+                    dirección se actualizará al soltarlo.
                   </p>
                 </div>
 

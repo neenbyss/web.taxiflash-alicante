@@ -30,7 +30,6 @@ export function GoogleButton({ texto }: { texto: string }) {
     <Button
       type="button"
       variant="outline"
-      size="lg"
       className="w-full"
       onClick={entrar}
       disabled={cargando}

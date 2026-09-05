@@ -1,45 +1,51 @@
 "use client"
 
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useForm } from "react-hook-form"
 
+import { FormInputControl } from "@/components/forms/form-control"
+import { RiHashtag } from "@/components/icons"
 import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { FieldGroup } from "@/components/ui/field"
+import {
+  consultarReservaSchema,
+  type ConsultarReservaInput,
+} from "@/lib/validations/reserva"
 
-// Buscador de reserva por código para invitados sin cuenta.
 export default function ConsultarReservaPage() {
   const router = useRouter()
-  const [codigo, setCodigo] = useState("")
+  const form = useForm<ConsultarReservaInput>({
+    resolver: zodResolver(consultarReservaSchema),
+    defaultValues: { codigo: "" },
+  })
 
   return (
-    <main className="mx-auto max-w-md px-4 py-16">
+    <main id="contenido" className="mx-auto max-w-md px-4 py-16">
       <h1 className="mb-6 font-heading text-2xl font-semibold">
         Consultar reserva
       </h1>
       <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (codigo.trim()) router.push(`/reserva/${codigo.trim().toUpperCase()}`)
-        }}
-        className="flex flex-col gap-4"
+        onSubmit={form.handleSubmit(({ codigo }) =>
+          router.push(`/reserva/${encodeURIComponent(codigo)}`)
+        )}
+        noValidate
       >
-        <Field>
-          <FieldLabel htmlFor="codigo">Código de reserva</FieldLabel>
-          <Input
+        <FieldGroup>
+          <FormInputControl
             id="codigo"
-            value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
+            label="Código de reserva"
+            icon={RiHashtag}
+            error={form.formState.errors.codigo}
+            description="Te lo mostramos al enviar la reserva y por email si dejaste uno."
             placeholder="R-XXXXXXXX"
+            autoCapitalize="characters"
+            autoComplete="off"
             autoFocus
+            {...form.register("codigo")}
           />
-          <FieldDescription>
-            Te lo mostramos al enviar la reserva (y por email si dejaste uno).
-          </FieldDescription>
-        </Field>
-        <Button type="submit" disabled={!codigo.trim()}>
-          Consultar estado
-        </Button>
+          <Button type="submit">Consultar estado</Button>
+        </FieldGroup>
       </form>
     </main>
   )

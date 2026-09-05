@@ -7,7 +7,7 @@ export const metadata = { title: "Reservar taxi" }
 export default async function ClienteReservarPage() {
   const session = await requireRole("CLIENTE")
   return (
-    <div className="h-[calc(100dvh-6rem)] w-full min-w-0 overflow-hidden lg:h-auto lg:space-y-5 lg:overflow-visible">
+    <div className="h-full min-h-0 w-full min-w-0 overflow-hidden lg:h-auto lg:space-y-5 lg:overflow-visible">
       <div className="hidden lg:block">
         <PageHeader
           titulo="¿A dónde vamos?"

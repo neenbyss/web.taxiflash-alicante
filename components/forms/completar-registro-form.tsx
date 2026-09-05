@@ -5,15 +5,10 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
+import { FormInputControl } from "@/components/forms/form-control"
+import { RiLockFill, RiPhoneLine, RiUser3Line } from "@/components/icons"
 import { Button } from "@/components/ui/button"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { authClient } from "@/lib/auth-client"
 import { registroSchema, type RegistroInput } from "@/lib/validations/auth"
 
@@ -66,57 +61,49 @@ export function CompletarRegistroForm({ email }: { email: string }) {
             {email}
           </div>
         </Field>
-        <Field data-invalid={Boolean(errors.name)}>
-          <FieldLabel htmlFor="complete-name">¿Cómo te llamas?</FieldLabel>
-          <Input
-            id="complete-name"
-            autoComplete="name"
-            className="text-base"
-            {...form.register("name")}
-          />
-          <FieldError errors={[errors.name]} />
-        </Field>
-        <Field data-invalid={Boolean(errors.telefono)}>
-          <FieldLabel htmlFor="complete-phone">Teléfono (opcional)</FieldLabel>
-          <Input
-            id="complete-phone"
-            type="tel"
-            autoComplete="tel"
-            inputMode="tel"
-            className="text-base"
-            {...form.register("telefono")}
-          />
-          <FieldError errors={[errors.telefono]} />
-        </Field>
-        <Field data-invalid={Boolean(errors.password)}>
-          <FieldLabel htmlFor="complete-password">
-            Crea una contraseña
-          </FieldLabel>
-          <Input
-            id="complete-password"
-            type="password"
-            autoComplete="new-password"
-            className="text-base"
-            {...form.register("password")}
-          />
-          <FieldDescription>
-            Mínimo 8 caracteres, con letras y al menos un número.
-          </FieldDescription>
-          <FieldError errors={[errors.password]} />
-        </Field>
-        <Field data-invalid={Boolean(errors.confirmPassword)}>
-          <FieldLabel htmlFor="complete-confirm">
-            Repite la contraseña
-          </FieldLabel>
-          <Input
-            id="complete-confirm"
-            type="password"
-            autoComplete="new-password"
-            className="text-base"
-            {...form.register("confirmPassword")}
-          />
-          <FieldError errors={[errors.confirmPassword]} />
-        </Field>
+        <FormInputControl
+          label="¿Cómo te llamas?"
+          icon={RiUser3Line}
+          error={errors.name}
+          id="complete-name"
+          autoComplete="name"
+          className="text-base"
+          {...form.register("name")}
+        />
+        <FormInputControl
+          label="Teléfono (opcional)"
+          icon={RiPhoneLine}
+          error={errors.telefono}
+          id="complete-phone"
+          type="tel"
+          autoComplete="tel"
+          inputMode="tel"
+          className="text-base"
+          {...form.register("telefono")}
+        />
+        <FormInputControl
+          label="Crea una contraseña"
+          icon={RiLockFill}
+          error={errors.password}
+          description="Mínimo 8 caracteres, con letras y al menos un número."
+          id="complete-password"
+          type="password"
+          revealPassword
+          autoComplete="new-password"
+          className="text-base"
+          {...form.register("password")}
+        />
+        <FormInputControl
+          label="Repite la contraseña"
+          icon={RiLockFill}
+          error={errors.confirmPassword}
+          id="complete-confirm"
+          type="password"
+          revealPassword
+          autoComplete="new-password"
+          className="text-base"
+          {...form.register("confirmPassword")}
+        />
         <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting
             ? "Creando tu cuenta…"

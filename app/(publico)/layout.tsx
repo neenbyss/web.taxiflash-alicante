@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 
 import { Logo } from "@/components/shared/logo"
@@ -6,6 +7,10 @@ import { homeDeRol } from "@/lib/roles"
 import { getServerSession } from "@/server/session"
 
 const NAV_PUBLICA = [{ href: "/reserva", label: "Consultar reserva" }]
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
 
 // Layout de las páginas públicas (sin cuenta): cabecera ligera con acceso
 // a los flujos y al login; si hay sesión, acceso directo al portal.

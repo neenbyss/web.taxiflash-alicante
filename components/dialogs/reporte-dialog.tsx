@@ -1,12 +1,13 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { RiAlarmWarningLine } from "@/components/icons"
+import { RiAlarmWarningLine, RiMessageLine } from "@/components/icons"
 import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { FormTextareaControl } from "@/components/forms/form-control"
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import {
   Select,
   SelectContent,
@@ -23,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import { trpc } from "@/lib/trpc"
 import {
   CATEGORIAS_REPORTE,
@@ -38,10 +43,16 @@ type ReporteDialogProps = {
   variante?: "boton" | "sutil"
 }
 
-const ITEMS = CATEGORIAS_REPORTE.map((c) => ({ value: c.valor, label: c.label }))
+const ITEMS = CATEGORIAS_REPORTE.map((c) => ({
+  value: c.valor,
+  label: c.label,
+}))
 
 /** Reportar un problema (opcionalmente sobre una reserva). */
-export function ReporteDialog({ reservaId, variante = "boton" }: ReporteDialogProps) {
+export function ReporteDialog({
+  reservaId,
+  variante = "boton",
+}: ReporteDialogProps) {
   const [abierto, setAbierto] = useState(false)
   const form = useForm<CrearReporteInput>({
     resolver: zodResolver(crearReporteSchema),
@@ -76,8 +87,8 @@ export function ReporteDialog({ reservaId, variante = "boton" }: ReporteDialogPr
         <DialogHeader>
           <DialogTitle>Reportar un problema</DialogTitle>
           <DialogDescription>
-            Cuéntanos qué pasó. Si el reporte es sobre un viaje concreto, quedará
-            ligado a él para que podamos revisarlo.
+            Cuéntanos qué pasó. Si el reporte es sobre un viaje concreto,
+            quedará ligado a él para que podamos revisarlo.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit((v) => crear.mutate(v))} noValidate>
@@ -108,16 +119,15 @@ export function ReporteDialog({ reservaId, variante = "boton" }: ReporteDialogPr
               />
               <FieldError errors={[errores.categoria]} />
             </Field>
-            <Field data-invalid={Boolean(errores.descripcion)}>
-              <FieldLabel htmlFor="reporte-desc">¿Qué ocurrió?</FieldLabel>
-              <Textarea
-                id="reporte-desc"
-                rows={4}
-                placeholder="Describe el problema con el mayor detalle posible…"
-                {...form.register("descripcion")}
-              />
-              <FieldError errors={[errores.descripcion]} />
-            </Field>
+            <FormTextareaControl
+              id="reporte-desc"
+              label="¿Qué ocurrió?"
+              icon={RiMessageLine}
+              error={errores.descripcion}
+              rows={4}
+              placeholder="Describe el problema con el mayor detalle posible…"
+              {...form.register("descripcion")}
+            />
             <Button type="submit" disabled={crear.isPending}>
               {crear.isPending ? "Enviando…" : "Enviar reporte"}
             </Button>

@@ -1,71 +1,75 @@
 "use client"
 
+import { zodResolver } from "@hookform/resolvers/zod"
 import { REGEXP_ONLY_DIGITS } from "input-otp"
 import Link from "next/link"
 import { useState } from "react"
+import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
+import { FormInputControl } from "@/components/forms/form-control"
+import { RiLockFill, RiMailLine } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import {
   Field,
-  FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp"
 import { emailAuthClient } from "@/lib/auth-email-client"
+import {
+  recuperarEmailSchema,
+  recuperarPasswordSchema,
+  type RecuperarEmailInput,
+  type RecuperarPasswordInput,
+} from "@/lib/validations/auth"
 
 export function RecuperarPasswordForm() {
   const [step, setStep] = useState<"email" | "reset" | "done">("email")
   const [email, setEmail] = useState("")
-  const [otp, setOtp] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
+  const emailForm = useForm<RecuperarEmailInput>({
+    resolver: zodResolver(recuperarEmailSchema),
+    defaultValues: { email: "" },
+  })
+  const passwordForm = useForm<RecuperarPasswordInput>({
+    resolver: zodResolver(recuperarPasswordSchema),
+    defaultValues: { otp: "", password: "" },
+  })
 
-  const requestCode = async () => {
-    if (!email.includes("@")) return toast.error("Introduce un correo válido.")
-    setLoading(true)
+  const requestCode = emailForm.handleSubmit(async (values) => {
+    const normalized = values.email.trim().toLowerCase()
     const { error } = await emailAuthClient.emailOtp.requestPasswordReset({
-      email: email.trim().toLowerCase(),
+      email: normalized,
     })
-    setLoading(false)
-    if (error)
-      return toast.error(
-        "No pudimos procesar la solicitud. Inténtalo de nuevo."
-      )
+    if (error) {
+      toast.error("No pudimos procesar la solicitud. Inténtalo de nuevo.")
+      return
+    }
+    setEmail(normalized)
     setStep("reset")
     toast.success("Si existe una cuenta, recibirás un código en unos minutos.")
-  }
+  })
 
-  const resetPassword = async () => {
-    if (otp.length !== 6) return toast.error("Introduce los 6 dígitos.")
-    if (
-      password.length < 8 ||
-      !/[a-zA-Z]/.test(password) ||
-      !/\d/.test(password)
-    ) {
-      return toast.error(
-        "La contraseña debe tener 8 caracteres, letras y al menos un número."
-      )
-    }
-    setLoading(true)
+  const resetPassword = passwordForm.handleSubmit(async ({ otp, password }) => {
     const { error } = await emailAuthClient.emailOtp.resetPassword({
-      email: email.trim().toLowerCase(),
+      email,
       otp,
       password,
     })
-    setLoading(false)
     if (error) {
-      setOtp("")
-      return toast.error("El código no es válido o ha caducado.")
+      passwordForm.setValue("otp", "")
+      passwordForm.setError("otp", {
+        message: "El código no es válido o ha caducado.",
+      })
+      return
     }
     setStep("done")
-  }
+  })
 
   if (step === "done") {
     return (
@@ -83,87 +87,85 @@ export function RecuperarPasswordForm() {
   return (
     <div className="space-y-6">
       {step === "email" ? (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault()
-            void requestCode()
-          }}
-        >
+        <form onSubmit={requestCode} noValidate>
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="recovery-email">
-                Correo de tu cuenta
-              </FieldLabel>
-              <Input
-                id="recovery-email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="text-base"
-              />
-              <FieldDescription>
-                La respuesta será igual exista o no una cuenta, para proteger tu
-                privacidad.
-              </FieldDescription>
-            </Field>
-            <Button type="submit" size="lg" disabled={loading}>
-              {loading ? "Enviando…" : "Recibir código"}
+            <FormInputControl
+              label="Correo de tu cuenta"
+              icon={RiMailLine}
+              error={emailForm.formState.errors.email}
+              description="La respuesta será igual exista o no una cuenta, para proteger tu privacidad."
+              id="recovery-email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              {...emailForm.register("email")}
+            />
+            <Button
+              type="submit"
+              size="lg"
+              disabled={emailForm.formState.isSubmitting}
+            >
+              {emailForm.formState.isSubmitting
+                ? "Enviando…"
+                : "Recibir código"}
             </Button>
           </FieldGroup>
         </form>
       ) : (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault()
-            void resetPassword()
-          }}
-        >
+        <form onSubmit={resetPassword} noValidate>
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="recovery-code">
-                Código de recuperación
-              </FieldLabel>
-              <InputOTP
-                id="recovery-code"
-                maxLength={6}
-                pattern={REGEXP_ONLY_DIGITS}
-                value={otp}
-                onChange={setOtp}
-                autoFocus
-                containerClassName="justify-center"
-                aria-label="Código de recuperación de 6 dígitos"
-              >
-                <InputOTPGroup className="gap-2">
-                  {Array.from({ length: 6 }).map((_, index) => (
-                    <InputOTPSlot
-                      key={index}
-                      index={index}
-                      className="size-11 rounded-xl border-0 bg-muted text-lg shadow-inner first:rounded-xl last:rounded-xl"
-                    />
-                  ))}
-                </InputOTPGroup>
-              </InputOTP>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="recovery-password">
-                Nueva contraseña
-              </FieldLabel>
-              <Input
-                id="recovery-password"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="text-base"
-              />
-              <FieldDescription>
-                Mínimo 8 caracteres, con letras y al menos un número.
-              </FieldDescription>
-            </Field>
-            <Button type="submit" size="lg" disabled={loading}>
-              {loading ? "Actualizando…" : "Guardar contraseña"}
+            <Controller
+              control={passwordForm.control}
+              name="otp"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="recovery-code">
+                    Código de recuperación
+                  </FieldLabel>
+                  <InputOTP
+                    id="recovery-code"
+                    maxLength={6}
+                    pattern={REGEXP_ONLY_DIGITS}
+                    value={field.value}
+                    onChange={field.onChange}
+                    autoFocus
+                    containerClassName="justify-center"
+                    aria-label="Código de recuperación de 6 dígitos"
+                    aria-invalid={fieldState.invalid}
+                  >
+                    <InputOTPGroup className="gap-2">
+                      {Array.from({ length: 6 }).map((_, index) => (
+                        <InputOTPSlot
+                          key={index}
+                          index={index}
+                          className="size-11 rounded-xl border-0 bg-muted text-lg shadow-inner first:rounded-xl last:rounded-xl"
+                        />
+                      ))}
+                    </InputOTPGroup>
+                  </InputOTP>
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              )}
+            />
+            <FormInputControl
+              label="Nueva contraseña"
+              icon={RiLockFill}
+              error={passwordForm.formState.errors.password}
+              description="Mínimo 8 caracteres, con letras y al menos un número."
+              id="recovery-password"
+              type="password"
+              revealPassword
+              autoComplete="new-password"
+              {...passwordForm.register("password")}
+            />
+            <Button
+              type="submit"
+              size="lg"
+              disabled={passwordForm.formState.isSubmitting}
+            >
+              {passwordForm.formState.isSubmitting
+                ? "Actualizando…"
+                : "Guardar contraseña"}
             </Button>
           </FieldGroup>
         </form>

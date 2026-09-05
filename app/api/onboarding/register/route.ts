@@ -2,6 +2,7 @@ import { randomBytes, randomInt } from "node:crypto"
 import { NextResponse, type NextRequest } from "next/server"
 import { z } from "zod"
 
+import { isTrustedAuthOrigin } from "@/lib/auth-origins"
 import {
   authDigest,
   createOnboardingProof,
@@ -22,10 +23,7 @@ const otpIdentifier = (email: string) => `${OTP_PREFIX}${authDigest(email)}`
 const linkIdentifier = (token: string) => `${LINK_PREFIX}${authDigest(token)}`
 
 function sameOrigin(request: NextRequest): boolean {
-  const origin = request.headers.get("origin")
-  const configured = process.env.NEXT_PUBLIC_APP_URL
-  if (!origin || !configured) return false
-  return origin === new URL(configured).origin
+  return isTrustedAuthOrigin(request.headers.get("origin"))
 }
 
 function rateLimited(request: NextRequest, email: string) {
