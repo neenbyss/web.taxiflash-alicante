@@ -1,4 +1,5 @@
 import { db } from "@/server/db"
+import { after } from "next/server"
 import { emailHabilitado, enviarEmail } from "@/server/services/email.service"
 
 type NotificacionInput = {
@@ -43,13 +44,17 @@ export async function notificarConEmail(
   await db.notificacion.create({
     data: { ...notif, canal: "EMAIL", leida: true },
   })
-  void enviarEmail({
-    to: destino,
-    subject: `TaxiFlash — ${input.titulo}`,
-    titulo: input.titulo,
-    lineas: [input.cuerpo],
-    urlAccion: input.url ? { texto: "Ver detalle", href: input.url } : undefined,
-  })
+  after(() =>
+    enviarEmail({
+      to: destino,
+      subject: `TaxiFlash — ${input.titulo}`,
+      titulo: input.titulo,
+      lineas: [input.cuerpo],
+      urlAccion: input.url
+        ? { texto: "Ver detalle", href: input.url }
+        : undefined,
+    }).then(() => undefined)
+  )
 }
 
 /** Email a un invitado sin cuenta (no hay notificación in-app que crear). */
@@ -59,13 +64,15 @@ export function emailAInvitado(opts: {
   cuerpo: string
   url?: string
 }): void {
-  void enviarEmail({
-    to: opts.email,
-    subject: `TaxiFlash — ${opts.titulo}`,
-    titulo: opts.titulo,
-    lineas: [opts.cuerpo],
-    urlAccion: opts.url ? { texto: "Ver estado", href: opts.url } : undefined,
-  })
+  after(() =>
+    enviarEmail({
+      to: opts.email,
+      subject: `TaxiFlash — ${opts.titulo}`,
+      titulo: opts.titulo,
+      lineas: [opts.cuerpo],
+      urlAccion: opts.url ? { texto: "Ver estado", href: opts.url } : undefined,
+    }).then(() => undefined)
+  )
 }
 
 /** Notifica in-app a todos los usuarios activos de un rol. */
@@ -79,6 +86,10 @@ export async function notificarPorRol(
   })
   if (!usuarios.length) return
   await db.notificacion.createMany({
-    data: usuarios.map((u) => ({ ...notif, userId: u.id, canal: "IN_APP" as const })),
+    data: usuarios.map((u) => ({
+      ...notif,
+      userId: u.id,
+      canal: "IN_APP" as const,
+    })),
   })
 }

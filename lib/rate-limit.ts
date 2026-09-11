@@ -2,16 +2,16 @@
 // Suficiente para el prototipo de instancia única; en producción con varias
 // instancias debería sustituirse por un almacén compartido (Redis/Upstash).
 
-type Bucket = { timestamps: number[] }
+type Bucket = { timestamps: number[]; expiresAt: number }
 
 const buckets = new Map<string, Bucket>()
 
 const MAX_BUCKETS = 10_000
 
-function prune(now: number, windowMs: number) {
+function prune(now: number) {
   if (buckets.size < MAX_BUCKETS) return
   for (const [key, bucket] of buckets) {
-    if (bucket.timestamps.every((t) => now - t > windowMs)) buckets.delete(key)
+    if (bucket.expiresAt <= now) buckets.delete(key)
   }
 }
 
@@ -27,9 +27,16 @@ export function checkRateLimit(opts: {
 }): { ok: boolean; retryAfterSeconds: number } {
   const now = Date.now()
   const id = `${opts.key}:${opts.actor}`
-  prune(now, opts.windowMs)
+  prune(now)
 
-  const bucket = buckets.get(id) ?? { timestamps: [] }
+  if (!buckets.has(id) && buckets.size >= MAX_BUCKETS) {
+    return { ok: false, retryAfterSeconds: 60 }
+  }
+
+  const bucket = buckets.get(id) ?? {
+    timestamps: [],
+    expiresAt: now + opts.windowMs,
+  }
   bucket.timestamps = bucket.timestamps.filter((t) => now - t < opts.windowMs)
 
   if (bucket.timestamps.length >= opts.limit) {
@@ -41,6 +48,7 @@ export function checkRateLimit(opts: {
   }
 
   bucket.timestamps.push(now)
+  bucket.expiresAt = now + opts.windowMs
   buckets.set(id, bucket)
   return { ok: true, retryAfterSeconds: 0 }
 }

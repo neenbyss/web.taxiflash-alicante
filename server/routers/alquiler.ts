@@ -74,7 +74,13 @@ export const alquilerRouter = createTRPCRouter({
     .input(
       z.object({
         estado: z
-          .enum(["A_CONFIRMAR", "CONFIRMADO", "RECHAZADO", "CANCELADO", "FINALIZADO"])
+          .enum([
+            "A_CONFIRMAR",
+            "CONFIRMADO",
+            "RECHAZADO",
+            "CANCELADO",
+            "FINALIZADO",
+          ])
           .optional(),
       })
     )
@@ -94,6 +100,17 @@ export const alquilerRouter = createTRPCRouter({
   confirmar: permissionProcedure(PERMISOS.GESTIONAR_ALQUILERES)
     .input(confirmarAlquilerSchema)
     .mutation(async ({ ctx, input }) => {
+      if (input.choferId) {
+        const driver = await ctx.db.user.findFirst({
+          where: { id: input.choferId, role: "CHOFER", activo: true },
+          select: { id: true },
+        })
+        if (!driver)
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Selecciona un chofer activo.",
+          })
+      }
       const { count } = await ctx.db.alquilerEntreCiudades.updateMany({
         where: { id: input.alquilerId, estado: "A_CONFIRMAR" },
         data: {

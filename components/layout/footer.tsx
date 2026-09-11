@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 const NAVEGACION = [
   { href: "/", label: "Inicio" },
   { href: "/about", label: "Nosotros" },
+  { href: "/services", label: "Servicios" },
   { href: "/ubicaciones", label: "Estaciones" },
   { href: "/contacto", label: "Contáctanos" },
   { href: "/register", label: "Reservas" },

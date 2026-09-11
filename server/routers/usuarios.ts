@@ -126,6 +126,12 @@ export const usuariosRouter = createTRPCRouter({
     .use(withRateLimit("usuarios.crear", 10, 60_000))
     .input(crearUsuarioAdminSchema)
     .mutation(async ({ ctx, input }) => {
+      if (input.role === "ADMIN" && ctx.session.user.role !== "ADMIN") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Solo un administrador puede crear administradores.",
+        })
+      }
       const existente = await ctx.db.user.findUnique({
         where: { email: input.email.toLowerCase() },
         select: { id: true },
@@ -164,6 +170,20 @@ export const usuariosRouter = createTRPCRouter({
   actualizar: permissionProcedure(PERMISOS.GESTIONAR_USUARIOS)
     .input(actualizarUsuarioAdminSchema)
     .mutation(async ({ ctx, input }) => {
+      const target = await ctx.db.user.findUnique({
+        where: { id: input.userId },
+        select: { role: true },
+      })
+      if (
+        ctx.session.user.role !== "ADMIN" &&
+        (input.role !== undefined || target?.role === "ADMIN")
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Solo un administrador puede cambiar roles o editar administradores.",
+        })
+      }
       if (input.userId === ctx.session.user.id && input.activo === false) {
         throw new TRPCError({
           code: "BAD_REQUEST",

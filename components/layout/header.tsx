@@ -9,7 +9,6 @@ import {
 } from "@/components/icons"
 import { AnimatePresence, m, useReducedMotion } from "motion/react"
 import Link from "next/link"
-import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 
@@ -21,7 +20,8 @@ import { useIsMobile } from "@/hooks/use-mobile"
 const NAV = [
   { href: "/", label: "Inicio", index: "01" },
   { href: "/about", label: "Nosotros", index: "02" },
-  { href: "/ubicaciones", label: "Ubicaciones", index: "03" },
+  { href: "/services", label: "Servicios", index: "03" },
+  { href: "/ubicaciones", label: "Ubicaciones", index: "04" },
 ]
 
 export function Header() {
@@ -218,33 +218,25 @@ export function Header() {
                     delay: animateMenu ? 0.28 : 0,
                     duration: animateMenu ? 0.5 : 0,
                   }}
-                  className="relative min-h-72 overflow-hidden rounded-[2rem] sm:min-h-96 lg:min-h-128"
+                  className="relative min-h-72 overflow-hidden text-right rounded-[2rem] sm:min-h-96 lg:min-h-128"
                 >
-                  <Image
-                    src="/images/service-taxi.png"
-                    alt="Taxis preparados para recoger pasajeros"
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 38vw"
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-secondary via-secondary/55 to-transparent" />
 
                   <div className="absolute inset-x-0 bottom-0 space-y-5 p-6 sm:p-8">
-                    <p className="max-w-sm font-heading text-2xl leading-tight text-white sm:text-3xl">
+                    <p className="font-heading text-2xl md:text-3xl leading-tight text-white sm:text-3xl text-right">
                       ¿Necesitas un taxi ahora?
                     </p>
 
-                    <div className="flex flex-col gap-3 text-sm text-white/70">
+                    <div className="flex flex-col items-end gap-3 text-sm text-white/70">
                       <a
                         href="tel:+34631288429"
-                        className="group flex items-center gap-3 transition hover:text-primary"
+                        className="group flex items-center gap-3 transition hover:text-primary text-sm sm:text-lg md:text-xl"
                       >
                         <RiPhoneLine className="size-5" aria-hidden />
                         <span>+34 631 28 84 29</span>
                       </a>
                       <a
                         href="mailto:support@taxiflash.com"
-                        className="group flex items-center gap-3 break-all transition hover:text-primary"
+                        className="group flex items-center gap-3 break-all transition hover:text-primary text-sm sm:text-lg md:text-xl"
                       >
                         <RiMailLine className="size-5 shrink-0" aria-hidden />
                         <span>support@taxiflash.com</span>

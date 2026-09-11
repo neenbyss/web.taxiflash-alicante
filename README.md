@@ -4,6 +4,21 @@ Aplicación de reservas de taxi con portales de cliente, chofer y administració
 Utiliza Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui, tRPC,
 Prisma, PostgreSQL y Better Auth.
 
+## Organización de las páginas públicas
+
+- `(static)`: landing, Nosotros (`/about`) y Servicios (`/services`).
+- `(redirect)`: `/redirigir`, con logo y carga sencilla, sin navegación comercial.
+- `(booking-status)`: consulta pública `/reserva` y `/reserva/[codigo]`, sin header ni footer comercial y con `noindex`.
+
+Los nombres entre paréntesis organizan archivos; no forman parte de las URL.
+Este último grupo reemplaza a `(publico)` sin cambiar los enlaces de consulta
+existentes. No debe eliminarse la consulta de reservas al editar la redirección.
+
+Cada página comercial compone sus bloques desde archivos `*.section.tsx`, igual
+que la landing. `about/page.tsx` reúne `hero`, `story`, `purpose` y `principles`;
+`services/page.tsx` reúne `hero` y `catalogue`. Edita el contenido y los estilos
+en cada sección; deja la composición y los metadatos en `page.tsx`.
+
 ## Inicio rápido
 
 Requisitos: Node.js 22 o superior, Yarn y Docker Desktop iniciado.
@@ -227,6 +242,35 @@ contraseñas del seed en producción.
 
 ## Seguridad antes de producción
 
+Revisión del 10/09/2026: la API limita los lotes tRPC a 10 operaciones y los
+cuerpos a 64 KiB (tRPC), 16 KiB (auth) y 2 KiB (registro), midiendo los bytes
+recibidos aunque no exista `Content-Length`. Las mutaciones tRPC validan el
+origen y sus respuestas llevan `private, no-store`. Los errores internos no
+devuelven mensajes de Prisma ni trazas en producción.
+
+Las comprobaciones de cupos y duplicados de reservas se ejecutan dentro de una
+transacción con bloqueo por cliente. Los intentos OTP reclaman una versión del
+desafío antes de comparar el código para evitar intentos paralelos sin contar.
+Los códigos predecibles del seed no permiten consultar viajes públicamente en
+producción. Se restringieron las reseñas de chofer, los cambios de rol y el
+contacto del cliente antes de asignar una reserva.
+
+Pruebas de regresión locales (sin enviar correos ni crear reservas):
+
+```bash
+yarn tsx --test tests/security.test.ts
+node --conditions=react-server --import tsx --test tests/access-control.test.ts
+```
+
+La segunda prueba utiliza el seed local únicamente para lecturas: comprueba
+que un anónimo no acceda a perfiles/notificaciones y que un cliente no lea
+reservas, chats, reseñas de chofer ni listas de usuarios que no le corresponden.
+
+Los límites generales y de correo siguen almacenados en memoria por instancia.
+En Vercel deben complementarse con un almacén compartido y reglas WAF antes
+de abrir el servicio a tráfico público. Esta revisión no sustituye una prueba
+de penetración ni garantiza protección frente a un DDoS volumétrico.
+
 - Cambia todos los secretos y no ejecutes el seed en producción.
 - Usa HTTPS y coloca CDN/WAF o proxy inverso delante de Next.js.
 - Bloquea el acceso directo al origen y sobrescribe la cabecera de IP confiable.
@@ -244,31 +288,117 @@ revoca sesiones y determina los datos afectados.
 
 ## Publicar temporalmente en Vercel
 
-Vercel construye Next.js directamente; el modo `standalone` se conserva para
-Docker y no altera ese despliegue. PostgreSQL de Docker local no es accesible
-desde Vercel: conecta una base administrada y usa su `DATABASE_URL`.
+Esta es una prueba remota con comportamiento de producción, no el modo demo
+simulado. No se publica automáticamente desde este repositorio.
+
+`vercel.json` selecciona Next.js, Yarn y `yarn build:vercel`. Este comando valida
+las variables, genera Prisma y compila. No ejecuta migraciones ni seed. Vercel
+gestiona el servidor: **no uses `yarn start`, Docker ni un puerto fijo allí**.
+`standalone` se genera solo fuera de Vercel para conservar Docker/local.
+El proyecto admite Node 22 y 24; en Vercel usa Node 24, igual que la verificación
+local actual. No configures Output Directory ni lo cambies a `out`.
+
+### 1. Base de datos y variables
+
+Prepara una base PostgreSQL remota **exclusiva para la presentación**, preferiblemente
+en una región europea cercana a las funciones. Docker de tu PC no es accesible
+desde Vercel. Copia la conexión con pooling en `DATABASE_URL` y, si tu proveedor
+lo necesita, la conexión directa en `DIRECT_URL` para las migraciones. Conserva
+los parámetros SSL del proveedor. Cada instancia limita su pool a 5 conexiones;
+esto no sustituye el pool remoto ni los límites globales de la base.
+
+Usa [config/vercel.env.example](config/vercel.env.example) como plantilla, no el
+`.env` local. Sus valores son marcadores que debes sustituir.
+
+| Variable | Qué configurar |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL remoto con pooling y TLS |
+| `DIRECT_URL` | Opcional, conexión de migraciones; si se omite usa `DATABASE_URL` |
+| `BETTER_AUTH_SECRET` | Secreto aleatorio nuevo de al menos 32 caracteres; nunca el local |
+| `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL` | El mismo origen HTTPS estable, sin barra final |
+| `BETTER_AUTH_TRUSTED_ORIGINS` | Orígenes HTTPS exactos, separados por coma, incluyendo el anterior |
+| `TRUSTED_PROXY_HEADER` | `x-forwarded-for` en Vercel; `TRUSTED_PROXY_IPS` puede omitirse |
+| `EMAIL_PROVIDER` | `resend` para esta prueba |
+| `RESEND_API_KEY` | Clave de Resend del entorno remoto |
+| `EMAIL_FROM` | Remitente de un dominio verificado para enviar al cliente |
+| `TARIFA_BASE`, `TARIFA_POR_KM`, `TARIFA_MINIMA` | Valores positivos; confirma las tarifas antes de aceptar viajes reales |
+| `SITE_NOINDEX` | `true` durante la presentación, también si usas el entorno Production |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Opcionales, siempre ambos o ninguno |
+| `GOOGLE_SITE_VERIFICATION`, `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | Opcionales durante la prueba |
+
+Si eliges SMTP, añade `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER` y
+`SMTP_PASS` del proveedor remoto. No uses Mailpit. Con Resend no necesitas SMTP.
+No subas `POSTGRES_*`, `SEED_ADMIN_*`, ni secretos con prefijo `NEXT_PUBLIC_`.
+No compartas el archivo con las credenciales ni lo subas a Git.
+
+### 2. Configurar Vercel y autenticación
 
 1. Importa el repositorio en Vercel o ejecuta `npx vercel link`.
-2. Añade las variables de `.env.example` en **Settings → Environment Variables**.
+2. Añade las variables de la tabla en **Settings → Environment Variables** del
+   entorno que vas a usar. No compartas la base final de producción con previews.
 3. Usa el dominio HTTPS final en `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL` y
    `BETTER_AUTH_TRUSTED_ORIGINS`.
 4. Configura Resend con una API key de producción y un `EMAIL_FROM` de un
    dominio verificado.
-5. Para Google OAuth registra `https://TU-DOMINIO/api/auth/callback/google`.
-6. Aplica las migraciones una sola vez contra la base remota y despliega:
+5. Para Google OAuth registra `https://TU-DOMINIO/api/auth/callback/google` y
+   añade los usuarios de prueba en Google si la aplicación sigue en Testing.
+6. Usa el dominio estable del proyecto para mostrar la web. Una URL aleatoria
+   de Preview no queda autorizada automáticamente: configura su origen exacto y
+   callback si quieres autenticar allí. **No autorices `*.vercel.app`.**
+7. Mantén Deployment Protection para la prueba y da acceso al cliente mediante
+   las opciones de Vercel. `noindex` evita indexación, no controla el acceso.
+
+### 3. Validar, migrar y desplegar
+
+Después de guardar las variables remotas y vincular el proyecto:
 
 ```bash
-npx vercel env pull .env.production.local
+npx vercel env pull .env.vercel.local --environment=production
+node --env-file=.env.vercel.local --import tsx scripts/check-deployment-env.ts
 yarn db:generate
-yarn db:deploy
+node --env-file=.env.vercel.local node_modules/prisma/build/index.js migrate status
+node --env-file=.env.vercel.local node_modules/prisma/build/index.js migrate deploy
 npx vercel --prod
 ```
 
-No ejecutes `yarn db:seed` en producción. `prebuild` genera Prisma antes del
-build. Para SEO, `GOOGLE_SITE_VERIFICATION` recibe el contenido de la etiqueta
+Los comandos de Prisma cargan explícitamente el archivo remoto para no migrar
+por error la base local. Antes de `migrate deploy`, verifica en la consola del
+proveedor que seleccionaste la base de la presentación. No se ha ejecutado
+ninguno de estos comandos remotos automáticamente.
+
+Para Preview, usa `--environment=preview` al obtener las variables y `npx vercel`
+al desplegar. Si cambias URLs o variables `NEXT_PUBLIC_*`, vuelve a desplegar.
+
+**No ejecutes `yarn db:seed` en el despliegue ni contra la base definitiva.**
+La base nueva no tiene usuarios: registra una cuenta real con OTP y crea unas
+pocas reservas de prueba. El seed local contiene cuentas y datos ficticios que
+no deben publicarse. Para probar administración, promueve únicamente tu cuenta
+verificada desde una conexión administrativa segura y vuelve a iniciar sesión;
+no habilites un registro público de administradores.
+
+### 4. Comprobación tras publicar
+
+- Abre `/`, `/about`, `/services`, `/reserva` y `/redirigir`.
+- Prueba email OTP, perfil, sesión, cierre de sesión y recuperación de contraseña.
+- Prueba Google si lo habilitaste; revisa remitente/destinatario y logs de entrega.
+- Desde un móvil, prueba reserva, zoom, ubicación (HTTPS), origen y destino.
+- Comprueba que un cliente no entra a administración ni consulta reservas ajenas.
+- Comprueba `/robots.txt` y la cabecera `X-Robots-Tag`: la demo debe ser `noindex`.
+- Revisa logs de funciones, conexiones de PostgreSQL y errores de correo. No
+  registres tokens, OTP, cuerpos de autenticación ni datos personales completos.
+- Antes de abrir la prueba al público, configura límites y protección en Vercel;
+  el rate limit en memoria se reinicia y no se comparte entre instancias.
+
+Para el sitio definitivo cambia `SITE_NOINDEX=false` y vuelve a desplegar. Los
+Preview permanecen sin indexación. Para SEO, `GOOGLE_SITE_VERIFICATION` recibe el contenido de la etiqueta
 de Search Console y `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` el ID `G-...`. Tras el
 despliegue comprueba `/robots.txt` y `/sitemap.xml`, y envía este último desde
-Search Console. Analytics se carga únicamente tras aceptar cookies.
+Search Console. No envíes el sitemap de la demo a Search Console. Analytics se
+carga únicamente tras aceptar cookies.
+
+Referencias: [Next.js en Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs),
+[variables de entorno y CLI](https://vercel.com/docs/cli/env),
+[cabeceras de IP de Vercel](https://vercel.com/docs/headers/request-headers).
 
 ```bash
 yarn env:check

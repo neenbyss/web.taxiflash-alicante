@@ -11,6 +11,7 @@ import {
   safeEqualDigest,
 } from "@/lib/auth-onboarding"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
+import { readLimitedJson } from "@/lib/request-body"
 import { db } from "@/server/db"
 import { enviarEmail } from "@/server/services/email.service"
 
@@ -92,7 +93,16 @@ export async function POST(request: NextRequest) {
       { message: "Solicitud demasiado grande." },
       { status: 413 }
     )
-  const parsed = emailSchema.safeParse(await request.json().catch(() => null))
+  let payload: unknown
+  try {
+    payload = await readLimitedJson(request, 2_048)
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Solicitud no válida." },
+      { status: error instanceof RangeError ? 413 : 400 }
+    )
+  }
+  const parsed = emailSchema.safeParse(payload)
   if (!parsed.success)
     return NextResponse.json(
       { message: "Introduce un correo válido." },
@@ -173,7 +183,16 @@ export async function PUT(request: NextRequest) {
       { message: "Solicitud demasiado grande." },
       { status: 413 }
     )
-  const parsed = codeSchema.safeParse(await request.json().catch(() => null))
+  let payload: unknown
+  try {
+    payload = await readLimitedJson(request, 2_048)
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Solicitud no válida." },
+      { status: error instanceof RangeError ? 413 : 400 }
+    )
+  }
+  const parsed = codeSchema.safeParse(payload)
   if (!parsed.success)
     return NextResponse.json(
       { message: "El código debe tener 6 dígitos." },
@@ -215,13 +234,21 @@ export async function PUT(request: NextRequest) {
       { status: 429 }
     )
   }
+  const claimedValue = JSON.stringify({
+    ...stored,
+    attempts: stored.attempts + 1,
+  })
+  const claimed = await db.verification.updateMany({
+    where: { id: record.id, value: record.value },
+    data: { value: claimedValue },
+  })
+  // A concurrent attempt must claim a fresh version before comparing any code.
+  if (claimed.count !== 1)
+    return NextResponse.json(
+      { message: "Hay otra verificación en curso. Inténtalo de nuevo." },
+      { status: 409 }
+    )
   if (!safeEqualDigest(stored.digest, authDigest(parsed.data.code))) {
-    await db.verification.update({
-      where: { id: record.id },
-      data: {
-        value: JSON.stringify({ ...stored, attempts: stored.attempts + 1 }),
-      },
-    })
     return NextResponse.json(
       { message: "El código no es válido." },
       { status: 400 }
@@ -229,7 +256,11 @@ export async function PUT(request: NextRequest) {
   }
 
   const consumed = await db.verification.deleteMany({
-    where: { id: record.id },
+    where: {
+      id: record.id,
+      value: claimedValue,
+      expiresAt: { gt: new Date() },
+    },
   })
   if (consumed.count !== 1)
     return NextResponse.json(

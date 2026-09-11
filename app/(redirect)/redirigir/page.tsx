@@ -11,6 +11,8 @@ export const metadata: Metadata = {
 
 export default async function RedirigirPage() {
   const session = await getServerSession()
-  const destination = session ? homeDeRol(session.user.role) : "/login"
+  const destination = session?.user.activo
+    ? homeDeRol(session.user.role)
+    : "/login"
   return <Redirecting destination={destination} />
 }

@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next"
+import { isIndexingAllowed } from "@/lib/indexing"
 
 const origin = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3500"
 
 export default function robots(): MetadataRoute.Robots {
-  const production = process.env.NODE_ENV === "production"
+  const production = isIndexingAllowed()
 
   return {
     rules: production

@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   turbopack: { root: projectRoot },
 
   // Docker copia el servidor autocontenido generado por Next.js.
-  output: "standalone",
+  output: process.env.VERCEL === "1" ? undefined : "standalone",
 
   // Cabeceras de seguridad para todas las rutas.
   async headers() {
@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
+          ...(process.env.SITE_NOINDEX === "true" ||
+          (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production")
+            ? [{ key: "X-Robots-Tag", value: "noindex, nofollow" }]
+            : []),
           // Evita que el sitio se incruste en iframes (clickjacking).
           { key: "X-Frame-Options", value: "DENY" },
           // El navegador no debe "adivinar" tipos MIME.

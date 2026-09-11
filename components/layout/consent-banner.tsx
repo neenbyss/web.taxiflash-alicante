@@ -2,6 +2,7 @@
 
 import { RiShieldCheckLine } from "@/components/icons"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useEffect, useSyncExternalStore } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -52,12 +53,14 @@ function pedirUbicacion() {
  * lee la decisión de localStorage sin setState en efecto.
  */
 export function ConsentBanner() {
+  const pathname = usePathname()
   const decision = useSyncExternalStore(
     subscribe,
     () => localStorage.getItem(KEY),
     () => PENDIENTE
   )
-  const visible = decision !== PENDIENTE && !decision
+  const visible =
+    pathname !== "/redirigir" && decision !== PENDIENTE && !decision
 
   // Bloquea el scroll del documento mientras el aviso esté visible.
   useEffect(() => {
@@ -86,7 +89,7 @@ export function ConsentBanner() {
       {/* Velo sutil que refuerza el bloqueo, sin oscurecer como un modal */}
       <div className="pointer-events-none absolute inset-0 bottom-0 -z-10 h-full bg-linear-to-t from-inner-background/60 to-inner-background/40" />
 
-      <div className="mx-auto h-full flex flex-col items-end justify-end w-full max-w-5xl p-4">
+      <div className="mx-auto flex h-full w-full max-w-5xl flex-col items-end justify-end p-4">
         <div className="flex flex-col gap-4 rounded-3xl bg-card p-5 shadow-2xl ring-1 ring-foreground/5 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
             <RiShieldCheckLine className="size-5" aria-hidden />
@@ -95,8 +98,8 @@ export function ConsentBanner() {
           <div className="min-w-0 flex-1">
             <p className="font-medium">Respetamos tu privacidad</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Usamos una cookie esencial para mantener tu sesión. Si aceptas,
-              tu navegador te pedirá permiso para usar tu ubicación (autocompletar
+              Usamos una cookie esencial para mantener tu sesión. Si aceptas, tu
+              navegador te pedirá permiso para usar tu ubicación (autocompletar
               tu recogida) y enviarte notificaciones sobre tus viajes. Consulta
               nuestra{" "}
               <Link
@@ -117,7 +120,11 @@ export function ConsentBanner() {
             >
               Rechazar
             </Button>
-            <Button className="flex-1 sm:w-full lg:w-auto" onClick={aceptar} autoFocus>
+            <Button
+              className="flex-1 sm:w-full lg:w-auto"
+              onClick={aceptar}
+              autoFocus
+            >
               Aceptar
             </Button>
           </div>

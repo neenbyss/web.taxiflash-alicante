@@ -14,7 +14,7 @@ export default async function AuthLayout({
   children: React.ReactNode
 }) {
   const session = await getServerSession()
-  if (session) redirect(homeDeRol(session.user.role))
+  if (session?.user.activo) redirect(homeDeRol(session.user.role))
 
   return <>{children}</>
 }

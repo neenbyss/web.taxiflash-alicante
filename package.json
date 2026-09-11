@@ -3,6 +3,10 @@
   "version": "0.0.1",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": "22.x || 24.x"
+  },
+  "packageManager": "yarn@1.22.22",
   "scripts": {
     "dev": "next dev -p 3500",
     "dev:setup": "docker compose up -d db mailpit && prisma generate && prisma migrate deploy && tsx prisma/seed.ts",
@@ -10,12 +14,14 @@
     "infra:down": "docker compose down",
     "prebuild": "prisma generate",
     "build": "next build",
+    "build:vercel": "yarn env:check:deployment && prisma generate && next build",
     "postbuild": "node scripts/prepare-standalone.mjs",
     "start": "node scripts/start-standalone.mjs",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "env:check": "tsx scripts/check-env.ts",
+    "env:check:deployment": "tsx scripts/check-deployment-env.ts",
     "email:check": "tsx scripts/check-email.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -54,6 +60,7 @@
     "react-leaflet": "^5.0.0",
     "react-resizable-panels": "^4.12.2",
     "recharts": "3.8.0",
+    "server-only": "0.0.1",
     "shadcn": "^4.13.0",
     "sonner": "^2.0.7",
     "superjson": "^2.2.6",

@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { APIError, createAuthMiddleware } from "better-auth/api"
 import { emailOTP } from "better-auth/plugins"
+import { after } from "next/server"
 
 import { getAuthOrigins } from "@/lib/auth-origins"
 import {
@@ -76,20 +77,24 @@ export const auth = betterAuth({
       async sendVerificationOTP({ email, otp, type }) {
         const reset = type === "forget-password"
         // No esperamos la entrega para que el tiempo de respuesta no revele si
-        // el correo existe. En el servidor Node el trabajo continúa en segundo plano.
-        void enviarEmail({
-          to: email,
-          subject: `${otp} es tu código de TaxiFlash`,
-          titulo: reset ? "Restablece tu contraseña" : "Confirma tu acceso",
-          lineas: [
-            reset
-              ? "Introduce este código para crear una contraseña nueva."
-              : "Introduce este código para confirmar que el correo te pertenece.",
-            "El código caduca en 10 minutos y solo se puede utilizar una vez.",
-          ],
-          codigo: otp,
-          required: true,
-        }).catch(() => undefined)
+        // el correo existe. after mantiene la tarea viva también en Vercel.
+        after(() =>
+          enviarEmail({
+            to: email,
+            subject: `${otp} es tu código de TaxiFlash`,
+            titulo: reset ? "Restablece tu contraseña" : "Confirma tu acceso",
+            lineas: [
+              reset
+                ? "Introduce este código para crear una contraseña nueva."
+                : "Introduce este código para confirmar que el correo te pertenece.",
+              "El código caduca en 10 minutos y solo se puede utilizar una vez.",
+            ],
+            codigo: otp,
+            required: true,
+          })
+            .then(() => undefined)
+            .catch(() => undefined)
+        )
       },
     }),
   ],
@@ -181,7 +186,7 @@ export const auth = betterAuth({
       }
     }),
     after: createAuthMiddleware(async (ctx) => {
-      if (ctx.path === "/sign-up/email") {
+      if (ctx.path === "/sign-up/email" && ctx.context.newSession) {
         const ip = ctx.request ? getClientIp(ctx.request.headers) : "unknown"
         const email = (
           ctx.body as { email?: string } | undefined

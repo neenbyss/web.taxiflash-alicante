@@ -7,6 +7,7 @@ import { ConsentAwareGoogleAnalytics } from "@/components/analytics/google-analy
 import { ConsentBanner } from "@/components/layout/consent-banner"
 import { TRPCProvider } from "@/components/providers/trpc-provider"
 import { cn } from "@/lib/utils"
+import { isIndexingAllowed } from "@/lib/indexing"
 
 const notoSerifHeading = Noto_Serif_JP({
   subsets: ["latin"],
@@ -58,11 +59,11 @@ export const metadata: Metadata = {
     images: ["/images/hero_bg.webp"],
   },
   robots: {
-    index: process.env.NODE_ENV === "production",
-    follow: process.env.NODE_ENV === "production",
+    index: isIndexingAllowed(),
+    follow: isIndexingAllowed(),
     googleBot: {
-      index: process.env.NODE_ENV === "production",
-      follow: process.env.NODE_ENV === "production",
+      index: isIndexingAllowed(),
+      follow: isIndexingAllowed(),
       "max-image-preview": "large",
       "max-snippet": -1,
       "max-video-preview": -1,

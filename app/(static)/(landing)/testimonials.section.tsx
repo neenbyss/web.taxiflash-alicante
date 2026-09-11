@@ -67,14 +67,12 @@ export function Testimonials() {
                 delay={0.2}
               />
               <div className="mt-10 flex w-full items-center justify-between gap-2">
-                
                 <CarouselNavigationDots />
 
                 <div className="flex items-center gap-2 [&_svg]:size-8!">
-                  <CarouselPrevious className="static size-8 sm:size-12 translate-y-0 rounded-lg border-none bg-primary hover:bg-primary" />
-                  <CarouselNext className="static size-8 sm:size-12 translate-y-0 rounded-lg border-none bg-primary hover:bg-primary" />
+                  <CarouselPrevious className="static size-8 translate-y-0 rounded-lg border-none bg-primary hover:bg-primary sm:size-12" />
+                  <CarouselNext className="static size-8 translate-y-0 rounded-lg border-none bg-primary hover:bg-primary sm:size-12" />
                 </div>
-                
               </div>
             </div>
 
@@ -82,7 +80,7 @@ export function Testimonials() {
               {testimonials.map(({ location, message, name }, index) => (
                 <CarouselItem
                   key={index}
-                  className="h-full grow basis-full sm:basis-1/2"
+                  className="flex basis-full sm:basis-1/2"
                 >
                   <AnimatedContent
                     key={index}
@@ -90,16 +88,16 @@ export function Testimonials() {
                     orientation="bottom"
                     distance={100}
                     initialScale={0.95}
-                    className=""
+                    className="flex w-full flex-1"
                   >
-                    <div className="p-1">
-                      <Card>
-                        <CardContent>
-                          <RiDoubleQuotesL className="size-14 sm:size-20 text-primary/80" />
+                    <div className="flex w-full flex-1 p-1">
+                      <Card className="w-full flex-1 rounded-3xl shadow-none">
+                        <CardContent className="flex flex-1 flex-col">
+                          <RiDoubleQuotesL className="size-14 text-primary/80 sm:size-20" />
 
                           <p className="text-sm sm:text-base"> {message} </p>
-                          <div className="mt-6 flex flex-col">
-                            <span className="text-lg sm:text-xl font-medium text-foreground">
+                          <div className="mt-auto flex flex-col pt-6">
+                            <span className="text-lg font-medium text-foreground sm:text-xl">
                               {name}
                             </span>
                             <div>
@@ -127,7 +125,7 @@ export function Testimonials() {
         />
 
         <div className="absolute inset-0 bg-linear-to-r from-[#161512]/90 to-[#161512]/90" />
-        <div className="absolute inset-0 backdrop-blur-sm mask-[linear-gradient(to_top,rgba(0,0,0,1),rgba(0,0,0,0))]" />
+        <div className="absolute inset-0 mask-[linear-gradient(to_top,rgba(0,0,0,1),rgba(0,0,0,0))] backdrop-blur-sm" />
       </div>
     </section>
   )

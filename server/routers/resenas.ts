@@ -79,7 +79,10 @@ export const resenasRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       // Un chofer solo puede ver su propio feedback; el admin puede ver todos.
       const user = ctx.session.user
-      if (user.role === "CHOFER" && user.id !== input.choferId) {
+      if (
+        user.role !== "ADMIN" &&
+        (user.role !== "CHOFER" || user.id !== input.choferId)
+      ) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Sin acceso." })
       }
       const [resenas, agregado] = await Promise.all([
@@ -129,7 +132,8 @@ export const resenasRouter = createTRPCRouter({
         take: input.limite + 1,
         ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
       })
-      const nextCursor = resenas.length > input.limite ? resenas.pop()!.id : undefined
+      const nextCursor =
+        resenas.length > input.limite ? resenas.pop()!.id : undefined
       return { resenas, nextCursor }
     }),
 

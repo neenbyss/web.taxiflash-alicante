@@ -30,6 +30,7 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
             (op.direction === "down" && op.result instanceof Error),
         }),
         httpBatchLink({
+          maxItems: 10,
           url: `${getBaseUrl()}/api/trpc`,
           transformer: superjson,
         }),

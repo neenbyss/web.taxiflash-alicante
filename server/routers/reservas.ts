@@ -27,7 +27,10 @@ import {
   notificarPorRol,
 } from "@/server/services/notificaciones.service"
 import { estimarTarifa } from "@/server/services/tarifa.service"
-import { obtenerRutaGeometria, obtenerRutaOptimizada } from "@/server/services/ruta.service"
+import {
+  obtenerRutaGeometria,
+  obtenerRutaOptimizada,
+} from "@/server/services/ruta.service"
 import { cancelarEsperasVencidas } from "@/server/services/viaje.service"
 import { ESPERA_MINUTOS } from "@/lib/viaje"
 import {
@@ -65,82 +68,103 @@ export const reservasRouter = createTRPCRouter({
       const duplicateWindow = new Date(now.getTime() - 15 * 60_000)
       const coordinateTolerance = 0.0005
 
-      const [activeReservations, reservationsToday, recentDuplicate] = await Promise.all([
-        ctx.db.reserva.count({
-          where: {
-            clienteId: user.id,
-            estado: { in: ["PENDIENTE", "ACEPTADA", "EN_CURSO"] },
-          },
-        }),
-        ctx.db.reserva.count({
-          where: { clienteId: user.id, createdAt: { gte: today } },
-        }),
-        ctx.db.reserva.findFirst({
-          where: {
-            clienteId: user.id,
-            estado: { in: ["PENDIENTE", "ACEPTADA", "EN_CURSO"] },
-            createdAt: { gte: duplicateWindow },
-            origenLat: { gte: input.origen.lat - coordinateTolerance, lte: input.origen.lat + coordinateTolerance },
-            origenLng: { gte: input.origen.lng - coordinateTolerance, lte: input.origen.lng + coordinateTolerance },
-            destinoLat: { gte: input.destino.lat - coordinateTolerance, lte: input.destino.lat + coordinateTolerance },
-            destinoLng: { gte: input.destino.lng - coordinateTolerance, lte: input.destino.lng + coordinateTolerance },
-          },
-          select: { id: true },
-        }),
-      ])
-
-      if (recentDuplicate) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "Ya tienes una reserva reciente con el mismo recorrido.",
-        })
-      }
-      if (activeReservations >= 5) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "Ya tienes demasiadas reservas activas. Completa o cancela una antes de crear otra.",
-        })
-      }
-      if (reservationsToday >= 12) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "Alcanzaste el límite diario de reservas.",
-        })
-      }
-
       const puntosEntrada = [input.origen, ...input.paradas, input.destino]
       const rutaOptimizada = await obtenerRutaOptimizada(puntosEntrada)
-      const puntos = rutaOptimizada.ordenPuntos.map((indice) => puntosEntrada[indice])
+      const puntos = rutaOptimizada.ordenPuntos.map(
+        (indice) => puntosEntrada[indice]
+      )
       const paradasOptimizadas = puntos.slice(1, -1)
       const { distanciaKm, tarifaEstimada } = await estimarTarifa(
         puntos.map((p) => ({ lat: p.lat, lng: p.lng }))
       )
 
-      const reserva = await ctx.db.reserva.create({
-        data: {
-          codigo: generarCodigo("R"),
-          tipo: input.tipo,
-          fechaProgramada:
-            input.tipo === "PROGRAMADA" ? input.fechaProgramada : null,
-          clienteId: user.id,
-          nombreContacto: user.name,
-          telefonoContacto: user.telefono ?? null,
-          emailContacto: user.email,
-          origenDireccion: sanitizeText(input.origen.direccion),
-          origenLat: input.origen.lat,
-          origenLng: input.origen.lng,
-          destinoDireccion: sanitizeText(input.destino.direccion),
-          destinoLat: input.destino.lat,
-          destinoLng: input.destino.lng,
-          paradas: paradasOptimizadas.map((p) => ({
-            direccion: sanitizeText(p.direccion),
-            lat: p.lat,
-            lng: p.lng,
-          })),
-          distanciaKm,
-          tarifaEstimada,
-          notas: input.notas ? sanitizeMultiline(input.notas) : null,
-        },
+      const reserva = await ctx.db.$transaction(async (tx) => {
+        // Serialize reservation checks and creation for this customer across instances.
+        await tx.$queryRaw`SELECT id FROM "user" WHERE id = ${user.id} FOR UPDATE`
+
+        const [activeReservations, reservationsToday, recentDuplicate] =
+          await Promise.all([
+            tx.reserva.count({
+              where: {
+                clienteId: user.id,
+                estado: { in: ["PENDIENTE", "ACEPTADA", "EN_CURSO"] },
+              },
+            }),
+            tx.reserva.count({
+              where: { clienteId: user.id, createdAt: { gte: today } },
+            }),
+            tx.reserva.findFirst({
+              where: {
+                clienteId: user.id,
+                estado: { in: ["PENDIENTE", "ACEPTADA", "EN_CURSO"] },
+                createdAt: { gte: duplicateWindow },
+                origenLat: {
+                  gte: input.origen.lat - coordinateTolerance,
+                  lte: input.origen.lat + coordinateTolerance,
+                },
+                origenLng: {
+                  gte: input.origen.lng - coordinateTolerance,
+                  lte: input.origen.lng + coordinateTolerance,
+                },
+                destinoLat: {
+                  gte: input.destino.lat - coordinateTolerance,
+                  lte: input.destino.lat + coordinateTolerance,
+                },
+                destinoLng: {
+                  gte: input.destino.lng - coordinateTolerance,
+                  lte: input.destino.lng + coordinateTolerance,
+                },
+              },
+              select: { id: true },
+            }),
+          ])
+
+        if (recentDuplicate) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Ya tienes una reserva reciente con el mismo recorrido.",
+          })
+        }
+        if (activeReservations >= 5) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message:
+              "Ya tienes demasiadas reservas activas. Completa o cancela una antes de crear otra.",
+          })
+        }
+        if (reservationsToday >= 12) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: "Alcanzaste el límite diario de reservas.",
+          })
+        }
+
+        return tx.reserva.create({
+          data: {
+            codigo: generarCodigo("R"),
+            tipo: input.tipo,
+            fechaProgramada:
+              input.tipo === "PROGRAMADA" ? input.fechaProgramada : null,
+            clienteId: user.id,
+            nombreContacto: user.name,
+            telefonoContacto: user.telefono ?? null,
+            emailContacto: user.email,
+            origenDireccion: sanitizeText(input.origen.direccion),
+            origenLat: input.origen.lat,
+            origenLng: input.origen.lng,
+            destinoDireccion: sanitizeText(input.destino.direccion),
+            destinoLat: input.destino.lat,
+            destinoLng: input.destino.lng,
+            paradas: paradasOptimizadas.map((p) => ({
+              direccion: sanitizeText(p.direccion),
+              lat: p.lat,
+              lng: p.lng,
+            })),
+            distanciaKm,
+            tarifaEstimada,
+            notas: input.notas ? sanitizeMultiline(input.notas) : null,
+          },
+        })
       })
 
       const resumen = `${reserva.origenDireccion} → ${reserva.destinoDireccion}`
@@ -173,7 +197,14 @@ export const reservasRouter = createTRPCRouter({
     .input(z.object({ codigo: z.string().min(6).max(20) }))
     .query(async ({ ctx, input }) => {
       const reserva = await ctx.db.reserva.findUnique({
-        where: { codigo: input.codigo.toUpperCase().trim() },
+        where: {
+          codigo: input.codigo.toUpperCase().trim(),
+          // Short predictable seed codes must never unlock public trip details.
+          ...(process.env.NODE_ENV === "production" &&
+          !/^R-[A-Z0-9]{8}$/.test(input.codigo.toUpperCase().trim())
+            ? { id: "invalid-public-code" }
+            : {}),
+        },
         select: {
           codigo: true,
           estado: true,
@@ -189,7 +220,10 @@ export const reservasRouter = createTRPCRouter({
         },
       })
       if (!reserva) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Reserva no encontrada." })
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Reserva no encontrada.",
+        })
       }
       const choferVisible = ["ACEPTADA", "EN_CURSO", "FINALIZADA"].includes(
         reserva.estado
@@ -244,7 +278,10 @@ export const reservasRouter = createTRPCRouter({
           reserva.choferId !== user.id &&
           user.role !== "ADMIN")
       ) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Reserva no encontrada." })
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Reserva no encontrada.",
+        })
       }
       const paradas = (reserva.paradas as { lat: number; lng: number }[]) ?? []
       const puntos = [
@@ -264,17 +301,25 @@ export const reservasRouter = createTRPCRouter({
         include: reservaDetalleInclude,
       })
       if (!reserva) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Reserva no encontrada." })
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Reserva no encontrada.",
+        })
       }
       const user = ctx.session.user
       const esDueno = reserva.clienteId === user.id
       const esChofer = reserva.choferId === user.id
       const esAdmin = user.role === "ADMIN"
       if (!esDueno && !esChofer && !esAdmin) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Sin acceso a esta reserva." })
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Sin acceso a esta reserva.",
+        })
       }
       // El contacto del chofer solo se muestra al cliente tras la aceptación.
-      const aceptada = ["ACEPTADA", "EN_CURSO", "FINALIZADA"].includes(reserva.estado)
+      const aceptada = ["ACEPTADA", "EN_CURSO", "FINALIZADA"].includes(
+        reserva.estado
+      )
       return {
         ...reserva,
         chofer: aceptada || esAdmin ? reserva.chofer : null,
@@ -287,10 +332,19 @@ export const reservasRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const reserva = await ctx.db.reserva.findUnique({
         where: { id: input.reservaId },
-        select: { id: true, clienteId: true, estado: true, codigo: true, choferId: true },
+        select: {
+          id: true,
+          clienteId: true,
+          estado: true,
+          codigo: true,
+          choferId: true,
+        },
       })
       if (!reserva || reserva.clienteId !== ctx.session.user.id) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Reserva no encontrada." })
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Reserva no encontrada.",
+        })
       }
       if (!["PENDIENTE", "ACEPTADA"].includes(reserva.estado)) {
         throw new TRPCError({
@@ -298,13 +352,24 @@ export const reservasRouter = createTRPCRouter({
           message: "Solo se pueden cancelar reservas pendientes o aceptadas.",
         })
       }
-      const actualizada = await ctx.db.reserva.update({
-        where: { id: reserva.id },
+      const actualizada = await ctx.db.reserva.updateMany({
+        where: {
+          id: reserva.id,
+          clienteId: ctx.session.user.id,
+          estado: { in: ["PENDIENTE", "ACEPTADA"] },
+        },
         data: {
           estado: "CANCELADA",
-          motivoEstado: input.motivo ? sanitizeText(input.motivo) : "Cancelada por el cliente",
+          motivoEstado: input.motivo
+            ? sanitizeText(input.motivo)
+            : "Cancelada por el cliente",
         },
       })
+      if (actualizada.count !== 1)
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "La reserva cambió de estado. Actualiza la página.",
+        })
       if (reserva.choferId) {
         await notificar({
           userId: reserva.choferId,
@@ -314,7 +379,7 @@ export const reservasRouter = createTRPCRouter({
           url: "/driver",
         })
       }
-      return actualizada
+      return { ok: true }
     }),
 
   // ------------------------------------------------------------
@@ -322,13 +387,21 @@ export const reservasRouter = createTRPCRouter({
   // ------------------------------------------------------------
 
   /** Reservas pendientes disponibles para tomar (requiere permiso). */
-  pendientes: permissionProcedure(PERMISOS.ACEPTAR_RESERVAS).query(({ ctx }) =>
-    ctx.db.reserva.findMany({
-      where: { estado: "PENDIENTE" },
-      include: reservaListadoInclude,
-      orderBy: { createdAt: "asc" },
-      take: 100,
-    })
+  pendientes: permissionProcedure(PERMISOS.ACEPTAR_RESERVAS).query(
+    async ({ ctx }) => {
+      const pending = await ctx.db.reserva.findMany({
+        where: { estado: "PENDIENTE" },
+        include: reservaListadoInclude,
+        orderBy: { createdAt: "asc" },
+        take: 100,
+      })
+      return pending.map((reserva) => ({
+        ...reserva,
+        emailContacto: null,
+        telefonoContacto: null,
+        notas: null,
+      }))
+    }
   ),
 
   /** Primero en aceptar se la queda: update condicional evita carreras. */
@@ -346,7 +419,8 @@ export const reservasRouter = createTRPCRouter({
       if (count === 0) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: "Esta reserva ya fue tomada por otro chofer o cambió de estado.",
+          message:
+            "Esta reserva ya fue tomada por otro chofer o cambió de estado.",
         })
       }
       const reserva = await ctx.db.reserva.findUniqueOrThrow({
@@ -397,7 +471,12 @@ export const reservasRouter = createTRPCRouter({
       }
       const reserva = await ctx.db.reserva.findUniqueOrThrow({
         where: { id: input.reservaId },
-        select: { id: true, codigo: true, clienteId: true, emailContacto: true },
+        select: {
+          id: true,
+          codigo: true,
+          clienteId: true,
+          emailContacto: true,
+        },
       })
       const cuerpo = `Tu reserva ${reserva.codigo} fue rechazada. Motivo: ${input.motivo}`
       if (reserva.clienteId) {
@@ -433,7 +512,9 @@ export const reservasRouter = createTRPCRouter({
       return ctx.db.reserva.findMany({
         where: {
           choferId: ctx.session.user.id,
-          ...(input.soloActivas ? { estado: { in: ["ACEPTADA", "EN_CURSO"] } } : {}),
+          ...(input.soloActivas
+            ? { estado: { in: ["ACEPTADA", "EN_CURSO"] } }
+            : {}),
         },
         include: { cliente: { select: usuarioPublicoSelect } },
         orderBy: { updatedAt: "desc" },
@@ -459,7 +540,10 @@ export const reservasRouter = createTRPCRouter({
         data: { choferEnCaminoEn: new Date() },
       })
       if (count === 0) {
-        throw new TRPCError({ code: "CONFLICT", message: "No se pudo actualizar." })
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "No se pudo actualizar.",
+        })
       }
       const reserva = await ctx.db.reserva.findUniqueOrThrow({
         where: { id: input.reservaId },
@@ -487,15 +571,28 @@ export const reservasRouter = createTRPCRouter({
           id: input.reservaId,
           choferId: ctx.session.user.id,
           estado: "ACEPTADA",
+          choferLlegoEn: null,
         },
-        data: { choferLlegoEn: new Date(), choferEnCaminoEn: new Date(), esperaHasta },
+        data: {
+          choferLlegoEn: new Date(),
+          choferEnCaminoEn: new Date(),
+          esperaHasta,
+        },
       })
       if (count === 0) {
-        throw new TRPCError({ code: "CONFLICT", message: "No se pudo actualizar." })
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "No se pudo actualizar.",
+        })
       }
       const reserva = await ctx.db.reserva.findUniqueOrThrow({
         where: { id: input.reservaId },
-        select: { id: true, codigo: true, clienteId: true, emailContacto: true },
+        select: {
+          id: true,
+          codigo: true,
+          clienteId: true,
+          emailContacto: true,
+        },
       })
       if (reserva.clienteId) {
         await notificarConEmail({
@@ -520,6 +617,7 @@ export const reservasRouter = createTRPCRouter({
           clienteId: ctx.session.user.id,
           estado: "ACEPTADA",
           choferLlegoEn: { not: null },
+          clienteSaleEn: null,
         },
         data: { clienteSaleEn: new Date(), esperaHasta: null },
       })
@@ -559,7 +657,10 @@ export const reservasRouter = createTRPCRouter({
           reserva.choferId !== ctx.session.user.id &&
           ctx.session.user.role !== "ADMIN")
       ) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Reserva no encontrada." })
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Reserva no encontrada.",
+        })
       }
       const canceladas = await cancelarEsperasVencidas(ctx.db, {
         reservaId: input.reservaId,
@@ -583,9 +684,13 @@ export const reservasRouter = createTRPCRouter({
       })
       if (
         !reserva ||
-        (reserva.choferId !== ctx.session.user.id && ctx.session.user.role !== "ADMIN")
+        (reserva.choferId !== ctx.session.user.id &&
+          ctx.session.user.role !== "ADMIN")
       ) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Reserva no encontrada." })
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Reserva no encontrada.",
+        })
       }
       return reserva
     }),
@@ -601,8 +706,16 @@ export const reservasRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const transicion =
         input.accion === "iniciar"
-          ? { desde: "ACEPTADA" as const, hasta: "EN_CURSO" as const, campo: { iniciadaEn: new Date() } }
-          : { desde: "EN_CURSO" as const, hasta: "FINALIZADA" as const, campo: { finalizadaEn: new Date() } }
+          ? {
+              desde: "ACEPTADA" as const,
+              hasta: "EN_CURSO" as const,
+              campo: { iniciadaEn: new Date() },
+            }
+          : {
+              desde: "EN_CURSO" as const,
+              hasta: "FINALIZADA" as const,
+              campo: { finalizadaEn: new Date() },
+            }
 
       const { count } = await ctx.db.reserva.updateMany({
         where: {
@@ -620,7 +733,12 @@ export const reservasRouter = createTRPCRouter({
       }
       const reserva = await ctx.db.reserva.findUniqueOrThrow({
         where: { id: input.reservaId },
-        select: { id: true, codigo: true, clienteId: true, emailContacto: true },
+        select: {
+          id: true,
+          codigo: true,
+          clienteId: true,
+          emailContacto: true,
+        },
       })
       if (reserva.clienteId) {
         const esFin = input.accion === "finalizar"
@@ -660,10 +778,30 @@ export const reservasRouter = createTRPCRouter({
         ...(input.busqueda
           ? {
               OR: [
-                { codigo: { contains: input.busqueda, mode: "insensitive" as const } },
-                { nombreContacto: { contains: input.busqueda, mode: "insensitive" as const } },
-                { origenDireccion: { contains: input.busqueda, mode: "insensitive" as const } },
-                { destinoDireccion: { contains: input.busqueda, mode: "insensitive" as const } },
+                {
+                  codigo: {
+                    contains: input.busqueda,
+                    mode: "insensitive" as const,
+                  },
+                },
+                {
+                  nombreContacto: {
+                    contains: input.busqueda,
+                    mode: "insensitive" as const,
+                  },
+                },
+                {
+                  origenDireccion: {
+                    contains: input.busqueda,
+                    mode: "insensitive" as const,
+                  },
+                },
+                {
+                  destinoDireccion: {
+                    contains: input.busqueda,
+                    mode: "insensitive" as const,
+                  },
+                },
               ],
             }
           : {}),
@@ -696,7 +834,11 @@ export const reservasRouter = createTRPCRouter({
       }
       const { count } = await ctx.db.reserva.updateMany({
         where: { id: input.reservaId, estado: "PENDIENTE" },
-        data: { estado: "ACEPTADA", choferId: chofer.id, aceptadaEn: new Date() },
+        data: {
+          estado: "ACEPTADA",
+          choferId: chofer.id,
+          aceptadaEn: new Date(),
+        },
       })
       if (count === 0) {
         throw new TRPCError({
